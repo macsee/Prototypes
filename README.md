@@ -1,4 +1,4 @@
-#Instrucciones
+## Instrucciones
 Ejecutar los siguientes comandos:
 
 ```bash
