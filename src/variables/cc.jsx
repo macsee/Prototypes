@@ -17,9 +17,7 @@ const comprobante_head = [
       var fven = cell.getRow().getData().fecha_ven;
       let comprobante = cell.getRow().getData().comprobante;
 
-      fven = fven.split("/");
-      fven = new Date(fven[2], fven[1] - 1, fven[0]);
-      let fhoy = new Date();
+      let vencido = cell.getRow().getData().vencido;
 
       onRendered(function() {
         cell.getColumn().hide();
@@ -29,7 +27,7 @@ const comprobante_head = [
         if (pagado) {
           cell.getRow().getElement().style.color = "green";
           return pagado;
-        } else if (!pagado && fhoy > fven) {
+        } else if (!pagado && vencido) {
           cell.getRow().getElement().style.color = "red";
           return pagado;
         } else {

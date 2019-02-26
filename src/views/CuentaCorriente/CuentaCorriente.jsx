@@ -21,15 +21,12 @@ import {
   NavLink
 } from "reactstrap";
 
-// import FormInputs from "components/FormInputs/FormInputs.jsx";
 import { cuenta_corriente_head, comprobante_head, tbody } from "variables/cc";
 import Button from "components/CustomButton/CustomButton.jsx";
-// import { networkInterfaces } from "os";
 import CustomTable from "components/CustomTable/CustomTable.jsx";
 
 class CuentaCorriente extends React.Component {
   constructor(props) {
-    console.log();
     super(props);
     this.state = {
       suma_haber: 0,
@@ -80,7 +77,7 @@ class CuentaCorriente extends React.Component {
   };
 
   setData = id => {
-    let index = tbody.findIndex(x => x.id == id);
+    let index = tbody.findIndex(x => x.id === id);
 
     this.setState(
       {
@@ -94,9 +91,7 @@ class CuentaCorriente extends React.Component {
     );
   };
 
-  isVencida = (fhoy, comprobante) => {
-    let fven = comprobante.fecha_ven.split("/");
-    fven = new Date(fven[2], fven[1] - 1, fven[0]);
+  isVencida = (fhoy, fven) => {
     return fhoy > fven;
   };
 
@@ -114,12 +109,10 @@ class CuentaCorriente extends React.Component {
   };
 
   updateFecha = evt => {
-    let fhoy = evt.target.value.split("-");
-
     this.setState(
       {
         ...this.state,
-        fhoy: new Date(fhoy[0], fhoy[1] - 1, fhoy[2])
+        fhoy: new Date(evt.target.value + " 00:00:00")
       },
       function() {
         this.calcularTotales(this.state.cc, this.state.anticipo);
@@ -142,16 +135,24 @@ class CuentaCorriente extends React.Component {
       suma_d = suma_d + prop.debe;
       suma_h = suma_h + prop.haber;
 
-      if (!prop.pagado && this.isVencida(fhoy, prop)) {
+      let fven = prop.fecha_ven.split("/");
+
+      fven = new Date(
+        parseInt(fven[2]),
+        parseInt(fven[1]) - 1,
+        parseInt(fven[0])
+      );
+
+      prop.vencido = false;
+      if (!prop.pagado && this.isVencida(fhoy, fven)) {
         saldo_vencido += prop.debe;
-        let fven = prop.fecha_ven.split("/");
-        fven = new Date(fven[2], fven[1] - 1, fven[0]);
+        prop.vencido = true;
         let msPerDay = 24 * 60 * 60 * 1000; // Number of milliseconds per day
         let daysLeft = Math.round((fhoy.getTime() - fven.getTime()) / msPerDay);
-        console.log("dias de vencimiento:", fhoy, fven, fhoy - fven, daysLeft);
-        interes_individual += daysLeft * (prop.debe * 0.0013);
-      } else if (!prop.pagado && !this.isVencida(fhoy, prop))
+        interes_individual += Math.round(daysLeft * (prop.debe * 0.0013));
+      } else if (!prop.pagado && !this.isVencida(fhoy, fven)) {
         saldo_vencer += prop.debe;
+      }
     });
     anticipo += resto;
     this.setState({
@@ -182,7 +183,7 @@ class CuentaCorriente extends React.Component {
 
     let t = tempcc.concat([
       {
-        fecha_emi: new Date().toLocaleDateString(),
+        fecha_emi: this.state.fhoy.toLocaleDateString(),
         comprobante: tipo,
         detalle: detalle,
         debe: debe,
@@ -230,7 +231,7 @@ class CuentaCorriente extends React.Component {
           "PAGO",
           0,
           value,
-          new Date(),
+          this.state.fhoy,
           true,
           [
             {
@@ -251,9 +252,10 @@ class CuentaCorriente extends React.Component {
     let value = parseInt(this.state.facturar_value);
     let fcount = this.state.factura_count;
     let rcount = this.state.reinc_count;
-    let fecha = new Date();
+
     let fecha_ven = new Date();
-    fecha_ven.setTime(fecha.getTime() + 15 * 24 * 60 * 60 * 1000);
+
+    fecha_ven.setTime(this.state.fhoy.getTime() + 15 * 24 * 60 * 60 * 1000);
 
     if (value === 3000) {
       fcount = fcount + 1;
@@ -392,18 +394,8 @@ class CuentaCorriente extends React.Component {
                           data={tbody}
                           callback={x => this.setData(x)}
                         />
-                        {/* <Label for="dni">DNI</Label>
-                        <Input
-                          type="text"
-                          name="dni"
-                          id="dni"
-                          defaultValue="30123456"
-                        /> */}
                       </FormGroup>
                     </Col>
-                    {/* <Col md={4}>
-                      <h5 className="nombre-alumno">Perez, José</h5>
-                    </Col> */}
                     <Col className="saldos" md={6}>
                       <Row>
                         <Col m3={10}>Anticipo:</Col>
