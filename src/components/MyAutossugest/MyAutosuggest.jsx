@@ -125,7 +125,7 @@ class MyAutosuggest extends React.Component {
 
     // Autosuggest will pass through all these props to the input.
     const inputProps = {
-      placeholder: "Buscar Apellido",
+      placeholder: this.props.placeholder,
       value,
       onChange: this.onChange
     };

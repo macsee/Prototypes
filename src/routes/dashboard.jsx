@@ -6,6 +6,7 @@ import TableList from "views/TableList/TableList.jsx";
 import Maps from "views/Maps/Maps.jsx";
 import UserPage from "views/UserPage/UserPage.jsx";
 import CuentaCorriente from "views/CuentaCorriente/CuentaCorriente.jsx";
+import Expedientes from "views/Expedientes/Expedientes.jsx";
 
 var dashRoutes = [
   {
@@ -56,6 +57,12 @@ var dashRoutes = [
     name: "Cuenta Corriente",
     icon: "nc-icon nc-bank",
     component: CuentaCorriente
+  },
+  {
+    path: "/expedientes",
+    name: "Expedientes",
+    icon: "nc-icon nc-bank",
+    component: Expedientes
   },
   {
     redirect: true,

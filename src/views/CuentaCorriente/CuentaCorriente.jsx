@@ -392,6 +392,7 @@ class CuentaCorriente extends React.Component {
                       <FormGroup>
                         <MyAutossugest
                           data={tbody}
+                          placeholder={"Buscar Apellido"}
                           callback={x => this.setData(x)}
                         />
                       </FormGroup>
