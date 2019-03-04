@@ -33,7 +33,9 @@ class Expedientes extends Component {
   state = {
     activeTab: "1",
     oficina: "0",
-    text_oficina: "G.A.D.I"
+    busqueda: "",
+    text_oficina: "G.A.D.I",
+    result_exp: { pases: [] }
   };
 
   toggle = tab => {
@@ -52,6 +54,13 @@ class Expedientes extends Component {
       text_oficina: document.getElementById("select_oficina").options[
         evt.target.value
       ].text
+    });
+  };
+
+  updateBusqueda = evt => {
+    this.setState({
+      ...this.state,
+      busqueda: evt.target.value
     });
   };
 
@@ -74,12 +83,24 @@ class Expedientes extends Component {
     });
 
     return row;
-    // for (var key in tabla) {
-    //   row = tabla[key];
-    //   for (var k in row.pases) {
-    //     if (row.pases[k].destino === oficina) console.log(row.pases[k]);
-    //   }
-    // }
+  };
+
+  busquedaExpedientes = (exp, tabla) => {
+    let row = tabla.filter(value => {
+      return value.id === exp;
+    });
+
+    return row;
+  };
+
+  buscar_exp = tabla => {
+    let result = this.busquedaExpedientes(this.state.busqueda, tabla);
+
+    if (result.length !== 0)
+      this.setState({
+        ...this.state,
+        result_exp: result[0]
+      });
   };
 
   renderTabs = oficina => {
@@ -96,7 +117,7 @@ class Expedientes extends Component {
             this.toggle("2");
           }}
         >
-          Listado Expedientes
+          Exptes. en Oficina
         </NavLink>
       </NavItem>
     );
@@ -238,8 +259,9 @@ class Expedientes extends Component {
                         <Input
                           type="text"
                           placeholder="Nro Expediente"
-                          name="cobrar"
-                          id="cobrarLabel"
+                          name="busqueda"
+                          id="busqueda"
+                          onChange={this.updateBusqueda}
                         />
                       </FormGroup>
                     </Col>
@@ -248,16 +270,50 @@ class Expedientes extends Component {
                         className="myBotonExp"
                         color="primary"
                         size="md"
-                        onClick={() => this.cobrar()}
+                        onClick={() => this.buscar_exp(expediente_b)}
                       >
                         Buscar
                       </Button>
                     </Col>
                   </Row>
                 </Form>
+                <Row>
+                  <Col md={3} className="saldos">
+                    Fecha Inicio:{" "}
+                  </Col>
+                  <Col md={3}>
+                    {this.state.result_exp.pases.length === 0
+                      ? ""
+                      : this.state.result_exp.fecha_inicio}
+                  </Col>
+                  <Col md={3} className="saldos">
+                    Iniciador:
+                  </Col>
+                  <Col md={3}>
+                    {this.state.result_exp.pases.length === 0
+                      ? ""
+                      : this.state.result_exp.iniciador}
+                  </Col>
+                  <Col md={3} className="saldos">
+                    Concepto:
+                  </Col>
+                  <Col md={9}>
+                    {this.state.result_exp.pases.length === 0
+                      ? ""
+                      : this.state.result_exp.concepto}
+                  </Col>
+                  <Col md={3} className="saldos">
+                    Estado:
+                  </Col>
+                  <Col md={3}>
+                    {this.state.result_exp.pases.length === 0
+                      ? ""
+                      : this.state.result_exp.estado}
+                  </Col>
+                </Row>
                 <CustomTable
                   header={expediente_h_busqueda}
-                  body={expediente_b}
+                  body={this.state.result_exp.pases}
                 />
               </CardBody>
             </Card>

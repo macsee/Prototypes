@@ -9,19 +9,19 @@ const expediente_h_oficina = [
   {
     title: "Estado",
     field: "estado",
-    headerSort: false,
-    formatter: function(cell, formatterParams, onRendered) {
-      var pendiente = cell.getRow().getData().pendiente;
-      var estado = cell.getRow().getData().estado;
+    headerSort: false
+    // formatter: function(cell, formatterParams, onRendered) {
+    //   var pendiente = cell.getRow().getData().pendiente;
+    //   var estado = cell.getRow().getData().estado;
 
-      if (pendiente && estado !== "Finalizado") {
-        cell.getRow().getElement().style.color = "red";
-        return cell.getValue();
-      } else {
-        cell.getRow().getElement().style.color = "green";
-        return cell.getValue();
-      }
-    }
+    //   if (pendiente && estado !== "Finalizado") {
+    //     cell.getRow().getElement().style.color = "red";
+    //     return cell.getValue();
+    //   } else {
+    //     cell.getRow().getElement().style.color = "green";
+    //     return cell.getValue();
+    //   }
+    // }
   }
 ];
 

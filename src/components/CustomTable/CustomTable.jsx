@@ -17,12 +17,7 @@ class CustomTable extends React.Component {
         data={this.props.body}
         options={options}
         responsiveLayout="true"
-        footerElement={
-          <div className="tabulator-row">
-            <div className="tabulator-cell">Debe: </div>
-            <div className="tabulator-cell">Haber: </div>
-          </div>
-        }
+        footerElement={this.props.footer}
       />
     );
   }
