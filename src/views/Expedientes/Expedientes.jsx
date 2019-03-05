@@ -111,9 +111,27 @@ class Expedientes extends Component {
     });
   };
 
-  // setData = x => {
-  //   console.log(x);
-  // };
+  accion = evt => {
+    if (evt.target.getElementsByClassName("tabulator-cell").length !== 0)
+      console.log("No tengo que hacer nada");
+    else {
+      let evento = evt.target.parentElement.parentElement.getAttribute(
+        "tabulator-field"
+      );
+      if (evento === "recibido") {
+        let id_exp = evt.target.parentElement.parentElement.parentElement.getElementsByClassName(
+          "tabulator-cell"
+        )[0].innerText;
+
+        console.log("Cambiar estado: ", id_exp);
+      } else
+        console.log(
+          evt.target.parentElement.getElementsByClassName("tabulator-cell")[0]
+            .innerText
+        );
+    }
+  };
+
   saveExpedientes = evt => {
     const exp = this.state.data_exp;
     const exp_count = this.state.exp_count;
@@ -255,6 +273,7 @@ class Expedientes extends Component {
             this.state.data_exp,
             this.state.estado
           )}
+          callback={this.accion}
         />
       </TabPane>
     );

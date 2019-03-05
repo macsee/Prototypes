@@ -3,7 +3,7 @@
 // #############################
 
 const expediente_h_oficina = [
-  { title: "Nro", field: "id", headerSort: false, minWidth: 100 },
+  { title: "Nro", field: "id", headerSort: false, minWidth: 80 },
   {
     title: "Fecha Pase",
     field: "fecha_pase",
@@ -11,12 +11,12 @@ const expediente_h_oficina = [
     minWidth: 100
   },
   { title: "Pase", field: "pase", headerSort: false, minWidth: 200 },
-  { title: "Concepto", field: "concepto", headerSort: false, minWidth: 500 },
+  { title: "Concepto", field: "concepto", headerSort: false, minWidth: 300 },
   {
     title: "Recibido",
     field: "recibido",
     headerSort: false,
-    minwidth: 100,
+    minwidth: 50,
     formatter: "tickCross",
     align: "center"
   }

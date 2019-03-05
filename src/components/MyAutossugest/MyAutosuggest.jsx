@@ -6,10 +6,10 @@ const theme = {
     position: "relative"
   },
   input: {
-    padding: "10px 10px 10px 10px",
+    padding: "7px",
     fontWeight: 300,
     fontSize: 16,
-    border: "1px solid #aaa",
+    border: "1px solid #DDDDDD",
     borderTopLeftRadius: 4,
     borderTopRightRadius: 4,
     borderBottomLeftRadius: 4,
