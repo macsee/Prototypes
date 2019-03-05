@@ -35,6 +35,7 @@ class Expedientes extends Component {
     oficina: "0",
     busqueda: "",
     text_oficina: "G.A.D.I",
+    estado: "pendientes",
     result_exp: { pases: [] }
   };
 
@@ -64,25 +65,52 @@ class Expedientes extends Component {
     });
   };
 
-  getExpedientesPendientes = (oficina, tabla) => {
+  updateEstado = evt => {
+    this.setState({
+      ...this.state,
+      estado: evt.target.value
+    });
+  };
+
+  getExpedientes = (oficina, tabla, condicion) => {
     let row;
 
-    row = tabla.map(value => {
+    if (condicion === "pendientes") {
+      row = tabla.filter(value => {
+        return (
+          value.pases[value.pases.length - 1].destino === oficina &&
+          value.estado !== "Finalizado"
+        );
+      });
+    } else {
+      row = tabla.filter(value => {
+        if (
+          (value.pases[value.pases.length - 1].destino === oficina &&
+            value.estado === "Finalizado") ||
+          value.pases[value.pases.length - 1].destino !== oficina
+        ) {
+          return value.pases.some(function(o) {
+            return o.destino === oficina;
+          });
+        } else return false;
+      });
+    }
+
+    return row.map(value => {
       var o = Object.assign({}, value);
-      if (value.pases[value.pases.length - 1].destino === oficina)
-        o.pendiente = true;
-      else o.pendiente = false;
+      let last_index = 0;
+      for (let i = 0; i < value.pases.length; i++)
+        if (value.pases[i].destino === oficina) last_index = i;
+      let pases = value.pases.slice(0, last_index + 2);
+      console.log(pases);
+      o.pase =
+        pases[pases.length - 2].destino +
+        " \u2192 " +
+        pases[pases.length - 1].destino;
+      o.fecha_pase = pases[pases.length - 1].fecha_pase;
 
       return o;
     });
-
-    row = row.filter(value => {
-      return value.pases.some(function(o) {
-        return o.destino === oficina;
-      });
-    });
-
-    return row;
   };
 
   busquedaExpedientes = (exp, tabla) => {
@@ -127,17 +155,24 @@ class Expedientes extends Component {
         <Col md={{ size: 4 }} xs={12}>
           <FormGroup>
             <Label for="exampleSelect1">Estado</Label>
-            <Input type="select" name="fecha" id="fecha">
-              <option value="Pendientes">Pendientes</option>
-              <option value="Pasados">Pasados</option>
+            <Input
+              type="select"
+              name="fecha"
+              id="fecha"
+              defaultValue={this.state.estado}
+              onChange={this.updateEstado}
+            >
+              <option value="pendientes">Pendientes</option>
+              <option value="procesados">Procesados</option>
             </Input>
           </FormGroup>
         </Col>
         <CustomTable
           header={expediente_h_oficina}
-          body={this.getExpedientesPendientes(
+          body={this.getExpedientes(
             this.state.text_oficina,
-            expediente_b
+            expediente_b,
+            this.state.estado
           )}
         />
       </TabPane>
@@ -214,111 +249,104 @@ class Expedientes extends Component {
   render() {
     return (
       <div className="content">
-        <Row>
-          <Col md={{ size: 6, offset: 0 }} xs={12}>
-            <Card>
-              <Col md={{ size: 4 }} xs={12}>
-                <CardBody>
-                  <FormGroup>
-                    <Label for="exampleSelect1">Oficina</Label>
-                    <Input
-                      type="select"
-                      name="select_oficina"
-                      id="select_oficina"
-                      defaultValue={this.state.oficina}
-                      onChange={this.updateOficina}
-                    >
-                      <option value="0">G.A.D.I</option>
-                      <option value="1">Oficina 1</option>
-                      <option value="2">Oficina 2</option>
-                    </Input>
-                  </FormGroup>
-                </CardBody>
-              </Col>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle tag="h4">{this.state.text_oficina}</CardTitle>
-              </CardHeader>
-              <CardBody>{this.renderTabs(this.state.oficina)}</CardBody>
-            </Card>
-          </Col>
-
-          <Col md={{ size: 6, offset: 0 }} xs={12}>
-            <Card>
-              <CardHeader>
-                <CardTitle tag="h4">
-                  Busqueda de Expedientes (General)
-                </CardTitle>
-              </CardHeader>
+        <Col md={{ size: 12, offset: 0 }} xs={12}>
+          <Card>
+            <Col md={{ size: 4 }} xs={12}>
               <CardBody>
-                <Form>
-                  <Row form>
-                    <Col md={4}>
-                      <FormGroup>
-                        <Input
-                          type="text"
-                          placeholder="Nro Expediente"
-                          name="busqueda"
-                          id="busqueda"
-                          onChange={this.updateBusqueda}
-                        />
-                      </FormGroup>
-                    </Col>
-                    <Col md={2}>
-                      <Button
-                        className="myBotonExp"
-                        color="primary"
-                        size="md"
-                        onClick={() => this.buscar_exp(expediente_b)}
-                      >
-                        Buscar
-                      </Button>
-                    </Col>
-                  </Row>
-                </Form>
-                <Row>
-                  <Col md={3} className="saldos">
-                    Fecha Inicio:{" "}
+                <FormGroup>
+                  <Label for="exampleSelect1">Oficina</Label>
+                  <Input
+                    type="select"
+                    name="select_oficina"
+                    id="select_oficina"
+                    defaultValue={this.state.oficina}
+                    onChange={this.updateOficina}
+                  >
+                    <option value="0">G.A.D.I</option>
+                    <option value="1">Oficina 1</option>
+                    <option value="2">Oficina 2</option>
+                  </Input>
+                </FormGroup>
+              </CardBody>
+            </Col>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle tag="h4">{this.state.text_oficina}</CardTitle>
+            </CardHeader>
+            <CardBody>{this.renderTabs(this.state.oficina)}</CardBody>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle tag="h4">Búsqueda de Expedientes (General)</CardTitle>
+            </CardHeader>
+            <CardBody>
+              <Form>
+                <Row form>
+                  <Col md={4}>
+                    <FormGroup>
+                      <Input
+                        type="text"
+                        placeholder="Nro Expediente"
+                        name="busqueda"
+                        id="busqueda"
+                        onChange={this.updateBusqueda}
+                      />
+                    </FormGroup>
                   </Col>
-                  <Col md={3}>
-                    {this.state.result_exp.pases.length === 0
-                      ? ""
-                      : this.state.result_exp.fecha_inicio}
-                  </Col>
-                  <Col md={3} className="saldos">
-                    Iniciador:
-                  </Col>
-                  <Col md={3}>
-                    {this.state.result_exp.pases.length === 0
-                      ? ""
-                      : this.state.result_exp.iniciador}
-                  </Col>
-                  <Col md={3} className="saldos">
-                    Concepto:
-                  </Col>
-                  <Col md={9}>
-                    {this.state.result_exp.pases.length === 0
-                      ? ""
-                      : this.state.result_exp.concepto}
-                  </Col>
-                  <Col md={3} className="saldos">
-                    Estado:
-                  </Col>
-                  <Col md={3}>
-                    {this.state.result_exp.pases.length === 0
-                      ? ""
-                      : this.state.result_exp.estado}
+                  <Col md={2}>
+                    <Button
+                      className="myBotonExp"
+                      color="primary"
+                      size="md"
+                      onClick={() => this.buscar_exp(expediente_b)}
+                    >
+                      Buscar
+                    </Button>
                   </Col>
                 </Row>
-                <CustomTable
-                  header={expediente_h_busqueda}
-                  body={this.state.result_exp.pases}
-                />
-              </CardBody>
-            </Card>
-          </Col>
-        </Row>
+              </Form>
+              <Row>
+                <Col md={3} className="saldos">
+                  Fecha Inicio:{" "}
+                </Col>
+                <Col md={3}>
+                  {this.state.result_exp.pases.length === 0
+                    ? ""
+                    : this.state.result_exp.fecha_inicio}
+                </Col>
+                <Col md={3} className="saldos">
+                  Iniciador:
+                </Col>
+                <Col md={3}>
+                  {this.state.result_exp.pases.length === 0
+                    ? ""
+                    : this.state.result_exp.iniciador}
+                </Col>
+                <Col md={3} className="saldos">
+                  Concepto:
+                </Col>
+                <Col md={9}>
+                  {this.state.result_exp.pases.length === 0
+                    ? ""
+                    : this.state.result_exp.concepto}
+                </Col>
+                <Col md={3} className="saldos">
+                  Estado:
+                </Col>
+                <Col md={3}>
+                  {this.state.result_exp.pases.length === 0
+                    ? ""
+                    : this.state.result_exp.estado}
+                </Col>
+              </Row>
+              <CustomTable
+                header={expediente_h_busqueda}
+                body={this.state.result_exp.pases}
+              />
+            </CardBody>
+          </Card>
+        </Col>
       </div>
     );
   }

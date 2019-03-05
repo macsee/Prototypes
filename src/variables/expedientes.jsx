@@ -3,25 +3,21 @@
 // #############################
 
 const expediente_h_oficina = [
-  { title: "Nro", field: "id", headerSort: false },
-  { title: "Fecha Inicio", field: "fecha_inicio", headerSort: false },
-  { title: "Iniciador", field: "iniciador", headerSort: false },
+  { title: "Nro", field: "id", headerSort: false, minWidth: 100 },
   {
-    title: "Estado",
-    field: "estado",
-    headerSort: false
-    // formatter: function(cell, formatterParams, onRendered) {
-    //   var pendiente = cell.getRow().getData().pendiente;
-    //   var estado = cell.getRow().getData().estado;
-
-    //   if (pendiente && estado !== "Finalizado") {
-    //     cell.getRow().getElement().style.color = "red";
-    //     return cell.getValue();
-    //   } else {
-    //     cell.getRow().getElement().style.color = "green";
-    //     return cell.getValue();
-    //   }
-    // }
+    title: "Fecha Pase",
+    field: "fecha_pase",
+    headerSort: false,
+    minWidth: 100
+  },
+  { title: "Pase", field: "pase", headerSort: false, minWidth: 200 },
+  { title: "Concepto", field: "concepto", headerSort: false, minWidth: 500 },
+  {
+    title: "Recibido",
+    field: "recibido",
+    headerSort: false,
+    minwidth: 100,
+    formatter: "tickCross"
   }
 ];
 
@@ -44,7 +40,8 @@ const expediente_b = [
       { destino: "Oficina 1", cant_hojas: 3, fecha_pase: "10/2/2019" },
       { destino: "Oficina 2", cant_hojas: 4, fecha_pase: "12/2/2019" }
     ],
-    estado: "En Curso"
+    estado: "En Curso",
+    recibido: true
   },
   {
     id: "000002",
@@ -56,6 +53,47 @@ const expediente_b = [
       { destino: "Oficina 1", cant_hojas: 3, fecha_pase: "11/2/2019" },
       { destino: "G.A.D.I", cant_hojas: 3, fecha_pase: "15/2/2019" }
     ],
-    estado: "Finalizado"
+    estado: "En Curso",
+    recibido: false
+  },
+  {
+    id: "000003",
+    fecha_inicio: "2/3/2019",
+    iniciador: "Perez, Pedro",
+    concepto: "Solicita homologación de título de Enfermería plan E2018",
+    pases: [
+      { destino: "G.A.D.I", cant_hojas: 2, fecha_pase: "2/3/2019" },
+      { destino: "Oficina 2", cant_hojas: 3, fecha_pase: "2/3/2019" }
+    ],
+    estado: "En Curso",
+    recibido: false
+  },
+  {
+    id: "000004",
+    fecha_inicio: "4/3/2019",
+    iniciador: "Perez, Pedro",
+    concepto: "Solicita homologación de título de Enfermería plan E2018",
+    pases: [
+      { destino: "G.A.D.I", cant_hojas: 2, fecha_pase: "4/3/2019" },
+      { destino: "Oficina 2", cant_hojas: 3, fecha_pase: "4/3/2019" },
+      { destino: "G.A.D.I", cant_hojas: 6, fecha_pase: "10/3/2019" }
+    ],
+    estado: "Finalizado",
+    recibido: false
+  },
+  {
+    id: "000005",
+    fecha_inicio: "4/3/2019",
+    iniciador: "Sol, Perez",
+    concepto: "Solicita homologación de título de Enfermería plan E2018",
+    pases: [
+      { destino: "G.A.D.I", cant_hojas: 2, fecha_pase: "4/3/2019" },
+      { destino: "Oficina 1", cant_hojas: 3, fecha_pase: "4/3/2019" },
+      { destino: "Oficina 2", cant_hojas: 6, fecha_pase: "10/3/2019" },
+      { destino: "Oficina 1", cant_hojas: 6, fecha_pase: "11/3/2019" },
+      { destino: "Oficina 2", cant_hojas: 6, fecha_pase: "12/3/2019" }
+    ],
+    estado: "En Curso",
+    recibido: false
   }
 ];
