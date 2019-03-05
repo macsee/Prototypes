@@ -17,7 +17,8 @@ const expediente_h_oficina = [
     field: "recibido",
     headerSort: false,
     minwidth: 100,
-    formatter: "tickCross"
+    formatter: "tickCross",
+    align: "center"
   }
 ];
 

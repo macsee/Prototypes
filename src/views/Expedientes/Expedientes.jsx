@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 
-import MyAutossugest from "../../components/MyAutossugest/MyAutosuggest.jsx";
+import MyAutossugestExp from "../../components/MyAutossugest/MyAutosuggestExp.jsx";
 import classnames from "classnames";
 import {
   Form,
@@ -36,6 +36,17 @@ class Expedientes extends Component {
     busqueda: "",
     text_oficina: "G.A.D.I",
     estado: "pendientes",
+    cant_hojas: 0,
+    destino: "",
+    iniciador: "",
+    concepto: "",
+    oficinas: [
+      { id: 0, nombre: "G.A.D.I" },
+      { id: 1, nombre: "Oficina 1" },
+      { id: 2, nombre: "Oficina 2" }
+    ],
+    exp_count: 5,
+    data_exp: expediente_b,
     result_exp: { pases: [] }
   };
 
@@ -72,6 +83,76 @@ class Expedientes extends Component {
     });
   };
 
+  updateIniciador = evt => {
+    this.setState({
+      ...this.state,
+      iniciador: evt.target.value
+    });
+  };
+
+  updateDestino = evt => {
+    this.setState({
+      ...this.state,
+      destino: evt
+    });
+  };
+
+  updateCantHojas = evt => {
+    this.setState({
+      ...this.state,
+      cant_hojas: evt.target.value
+    });
+  };
+
+  updateConcepto = evt => {
+    this.setState({
+      ...this.state,
+      concepto: evt.target.value
+    });
+  };
+
+  // setData = x => {
+  //   console.log(x);
+  // };
+  saveExpedientes = evt => {
+    const exp = this.state.data_exp;
+    const exp_count = this.state.exp_count;
+
+    let expte = {
+      id:
+        exp_count > 10
+          ? "0000" + parseInt(exp_count + 1)
+          : "00000" + parseInt(exp_count + 1),
+      iniciador: this.state.iniciador,
+      concepto: this.state.concepto,
+      fecha_inicio: new Date().toLocaleDateString(),
+      pases: [
+        {
+          fecha_pase: new Date().toLocaleDateString(),
+          destino: "G.A.D.I",
+          cant_hojas: this.state.cant_hojas
+        },
+        {
+          fecha_pase: new Date().toLocaleDateString(),
+          destino: this.state.destino,
+          cant_hojas: this.state.cant_hojas
+        }
+      ],
+      estado: "En Curso",
+      recibido: false
+    };
+
+    this.setState({
+      ...this.state,
+      exp_count: exp_count + 1,
+      data_exp: exp.concat([expte]),
+      cant_hojas: 0,
+      destino: "",
+      iniciador: "",
+      concepto: ""
+    });
+  };
+
   getExpedientes = (oficina, tabla, condicion) => {
     let row;
 
@@ -102,7 +183,7 @@ class Expedientes extends Component {
       for (let i = 0; i < value.pases.length; i++)
         if (value.pases[i].destino === oficina) last_index = i;
       let pases = value.pases.slice(0, last_index + 2);
-      console.log(pases);
+
       o.pase =
         pases[pases.length - 2].destino +
         " \u2192 " +
@@ -171,7 +252,7 @@ class Expedientes extends Component {
           header={expediente_h_oficina}
           body={this.getExpedientes(
             this.state.text_oficina,
-            expediente_b,
+            this.state.data_exp,
             this.state.estado
           )}
         />
@@ -201,29 +282,56 @@ class Expedientes extends Component {
               <Col md={4}>
                 <FormGroup>
                   <Label for="exampleSelect1">Iniciador</Label>
-                  <Input type="text" name="fecha" id="fecha" />
+                  <Input
+                    type="text"
+                    name="iniciador"
+                    id="iniciador"
+                    value={this.state.iniciador}
+                    onChange={this.updateIniciador}
+                  />
                 </FormGroup>
               </Col>
               <Col md={4}>
                 <FormGroup>
-                  <Label for="exampleSelect1">Destinatario</Label>
-                  <Input type="text" name="fecha" id="fecha" />
+                  <Label for="exampleSelect1">destino</Label>
+                  <MyAutossugestExp
+                    data={this.state.oficinas}
+                    placeholder={"Buscar Oficina"}
+                    callback={x => this.updateDestino(x)}
+                  />
                 </FormGroup>
               </Col>
               <Col md={2}>
                 <FormGroup>
                   <Label for="exampleSelect1">Hojas</Label>
-                  <Input type="text" name="fecha" id="fecha" />
+                  <Input
+                    type="text"
+                    name="hojas"
+                    id="hojas"
+                    value={this.state.cant_hojas}
+                    onChange={this.updateCantHojas}
+                  />
                 </FormGroup>
               </Col>
               <Col md={8}>
                 <FormGroup>
                   <Label for="exampleSelect1">Concepto</Label>
-                  <Input type="textarea" name="fecha" id="fecha" />
+                  <Input
+                    type="textarea"
+                    name="concepto"
+                    id="concepto"
+                    value={this.state.concepto}
+                    onChange={this.updateConcepto}
+                  />
                 </FormGroup>
               </Col>
               <Col md={6}>
-                <Button className="myBoton" color="primary" size="md">
+                <Button
+                  className="myBoton"
+                  color="primary"
+                  size="md"
+                  onClick={this.saveExpedientes}
+                >
                   Crear Expediente
                 </Button>
               </Col>
@@ -299,7 +407,7 @@ class Expedientes extends Component {
                       className="myBotonExp"
                       color="primary"
                       size="md"
-                      onClick={() => this.buscar_exp(expediente_b)}
+                      onClick={() => this.buscar_exp(this.state.data_exp)}
                     >
                       Buscar
                     </Button>
@@ -335,9 +443,18 @@ class Expedientes extends Component {
                   Estado:
                 </Col>
                 <Col md={3}>
-                  {this.state.result_exp.pases.length === 0
-                    ? ""
-                    : this.state.result_exp.estado}
+                  <span
+                    className={
+                      this.state.result_exp.pases.length !== 0 &&
+                      this.state.result_exp.estado === "Finalizado"
+                        ? "badge badge-success"
+                        : "badge badge-danger"
+                    }
+                  >
+                    {this.state.result_exp.pases.length === 0
+                      ? ""
+                      : this.state.result_exp.estado}
+                  </span>
                 </Col>
               </Row>
               <CustomTable
