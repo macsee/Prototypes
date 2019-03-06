@@ -4,8 +4,6 @@ import "react-tabulator/lib/styles.css"; // required styles
 import "react-tabulator/lib/css/tabulator.min.css"; // theme
 import { ReactTabulator } from "react-tabulator"; // for React 15.x, use import { React15Tabulator }
 
-// import { Table } from "reactstrap";
-
 class CustomTable extends React.Component {
   render() {
     const options = {
