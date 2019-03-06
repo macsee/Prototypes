@@ -20,10 +20,12 @@ import {
   NavLink
 } from "reactstrap";
 
+import CustomModal from "../../components/CustomModal/CustomModal.jsx";
 import {
   expediente_h_oficina,
   expediente_h_busqueda,
-  expediente_b
+  expediente_b,
+  oficinas
 } from "variables/expedientes.jsx";
 import Button from "components/CustomButton/CustomButton.jsx";
 import CustomTable from "components/CustomTable/CustomTable.jsx";
@@ -40,14 +42,67 @@ class Expedientes extends Component {
     destino: "",
     iniciador: "",
     concepto: "",
-    oficinas: [
-      { id: 0, nombre: "G.A.D.I" },
-      { id: 1, nombre: "Oficina 1" },
-      { id: 2, nombre: "Oficina 2" }
-    ],
+    oficinas: oficinas,
     exp_count: 5,
     data_exp: expediente_b,
-    result_exp: { pases: [] }
+    result_exp: { pases: [] },
+    showModal: false,
+    select_expediente_id: null
+  };
+
+  changeRecibido = expediente_id => {
+    let data = this.state.data_exp;
+    for (let i = 0; i < data.length; i++) {
+      if (data[i].id === expediente_id) {
+        data[i].recibido = !data[i].recibido;
+      }
+    }
+    this.setState({
+      ...this.state,
+      data_exp: data
+    });
+  };
+
+  mostrarModal = expediente_id => {
+    this.setState({
+      ...this.state,
+      showModal: !this.state.showModal,
+      select_expediente_id: expediente_id
+    });
+  };
+
+  changeStateFromTable = cell => {
+    let expediente_id = cell.getRow().getData().id;
+    if (this.state.estado === "pendientes") {
+      if (cell.getField() === "recibido") {
+        this.changeRecibido(expediente_id);
+      } else {
+        if (cell.getRow().getData().recibido) this.mostrarModal(expediente_id);
+        else alert("No recibiste el expediente!");
+      }
+    }
+  };
+
+  hacerPase = (destino, new_cant_hojas) => {
+    let data = this.state.data_exp;
+    for (let i = 0; i < data.length; i++) {
+      if (data[i].id === this.state.select_expediente_id) {
+        data[i].pases.push({
+          fecha_pase: new Date().toLocaleDateString(),
+          destino: destino,
+          cant_hojas:
+            data[i].pases[data[i].pases.length - 1].cant_hojas +
+            parseInt(new_cant_hojas)
+        });
+        data[i].recibido = false;
+      }
+    }
+    console.log(data);
+    this.setState({
+      ...this.state,
+      data_exp: data,
+      select_expediente_id: null
+    });
   };
 
   toggle = tab => {
@@ -109,27 +164,6 @@ class Expedientes extends Component {
       ...this.state,
       concepto: evt.target.value
     });
-  };
-
-  accion = evt => {
-    if (evt.target.getElementsByClassName("tabulator-cell").length !== 0)
-      console.log("No tengo que hacer nada");
-    else {
-      let evento = evt.target.parentElement.parentElement.getAttribute(
-        "tabulator-field"
-      );
-      if (evento === "recibido") {
-        let id_exp = evt.target.parentElement.parentElement.parentElement.getElementsByClassName(
-          "tabulator-cell"
-        )[0].innerText;
-
-        console.log("Cambiar estado: ", id_exp);
-      } else
-        console.log(
-          evt.target.parentElement.getElementsByClassName("tabulator-cell")[0]
-            .innerText
-        );
-    }
   };
 
   saveExpedientes = evt => {
@@ -274,6 +308,7 @@ class Expedientes extends Component {
             this.state.estado
           )}
           callback={this.accion}
+          changeStateFromTable={this.changeStateFromTable}
         />
       </TabPane>
     );
@@ -312,7 +347,7 @@ class Expedientes extends Component {
               </Col>
               <Col md={4}>
                 <FormGroup>
-                  <Label for="exampleSelect1">destino</Label>
+                  <Label for="exampleSelect1">Destino</Label>
                   <MyAutossugestExp
                     data={this.state.oficinas}
                     placeholder={"Buscar Oficina"}
@@ -376,6 +411,14 @@ class Expedientes extends Component {
   render() {
     return (
       <div className="content">
+        <CustomModal
+          showModal={this.state.showModal}
+          oficinas={this.state.oficinas.filter(
+            o => o.nombre !== this.state.text_oficina
+          )}
+          expediente_id={this.state.select_expediente_id}
+          hacerPase={this.hacerPase}
+        />
         <Col md={{ size: 12, offset: 0 }} xs={12}>
           <Card>
             <Col md={{ size: 4 }} xs={12}>
