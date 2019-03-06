@@ -2,6 +2,11 @@
 // // // table head data and table body data for Tables view
 // #############################
 
+const oficinas = [
+  { id: 0, nombre: "G.A.D.I" },
+  { id: 1, nombre: "Oficina 1" },
+  { id: 2, nombre: "Oficina 2" }
+];
 const expediente_h_oficina = [
   { title: "Nro", field: "id", headerSort: false, minWidth: 80 },
   {
@@ -27,8 +32,6 @@ const expediente_h_busqueda = [
   { title: "Destino", field: "destino", headerSort: false },
   { title: "Cant. Hojas", field: "cant_hojas", headerSort: false }
 ];
-
-export { expediente_h_oficina, expediente_h_busqueda, expediente_b };
 
 const expediente_b = [
   {
@@ -98,3 +101,5 @@ const expediente_b = [
     recibido: false
   }
 ];
+
+export { expediente_h_oficina, expediente_h_busqueda, expediente_b, oficinas };

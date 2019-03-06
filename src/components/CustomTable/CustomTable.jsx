@@ -18,7 +18,9 @@ class CustomTable extends React.Component {
         options={options}
         responsiveLayout="true"
         footerElement={this.props.footer}
-        onClick={this.props.callback}
+        cellClick={(e, cell) => {
+          this.props.changeStateFromTable(cell);
+        }}
       />
     );
   }
