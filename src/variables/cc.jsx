@@ -46,8 +46,8 @@ const comprobante_head = [
 const cuenta_corriente_head = [
   { title: "Emision", field: "fecha_emi", headerSort: false },
   { title: "Detalle", field: "detalle", headerSort: false },
-  { title: "Debe", field: "debe", headerSort: false },
-  { title: "Haber", field: "haber", headerSort: false }
+  { title: "Debe", field: "debe", headerSort: false, bottomCalc: "sum" },
+  { title: "Haber", field: "haber", headerSort: false, bottomCalc: "sum" }
 ];
 
 const tbody = [

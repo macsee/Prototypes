@@ -452,7 +452,7 @@ class Expedientes extends Component {
             </CardHeader>
             <CardBody>
               <Form>
-                <Row form>
+                <Row className="row-busqueda">
                   <Col md={4}>
                     <FormGroup>
                       <Input
@@ -477,34 +477,30 @@ class Expedientes extends Component {
                 </Row>
               </Form>
               <Row>
-                <Col md={3} className="saldos">
+                <Col md={2} className="saldos">
                   Fecha Inicio:{" "}
                 </Col>
-                <Col md={3}>
+                <Col md={2}>
                   {this.state.result_exp.pases.length === 0
                     ? ""
                     : this.state.result_exp.fecha_inicio}
                 </Col>
-                <Col md={3} className="saldos">
+              </Row>
+              <Row>
+                <Col md={2} className="saldos">
                   Iniciador:
                 </Col>
-                <Col md={3}>
+                <Col md={2}>
                   {this.state.result_exp.pases.length === 0
                     ? ""
                     : this.state.result_exp.iniciador}
                 </Col>
-                <Col md={3} className="saldos">
-                  Concepto:
-                </Col>
-                <Col md={9}>
-                  {this.state.result_exp.pases.length === 0
-                    ? ""
-                    : this.state.result_exp.concepto}
-                </Col>
-                <Col md={3} className="saldos">
+              </Row>
+              <Row>
+                <Col md={2} className="saldos">
                   Estado:
                 </Col>
-                <Col md={3}>
+                <Col md={2}>
                   <span
                     className={
                       this.state.result_exp.pases.length !== 0 &&
@@ -517,6 +513,16 @@ class Expedientes extends Component {
                       ? ""
                       : this.state.result_exp.estado}
                   </span>
+                </Col>
+              </Row>
+              <Row className="row-busqueda">
+                <Col md={2} className="saldos">
+                  Concepto:
+                </Col>
+                <Col md={9}>
+                  {this.state.result_exp.pases.length === 0
+                    ? ""
+                    : this.state.result_exp.concepto}
                 </Col>
               </Row>
               <CustomTable

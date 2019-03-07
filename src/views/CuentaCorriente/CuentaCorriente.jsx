@@ -462,12 +462,6 @@ class CuentaCorriente extends React.Component {
                       suma_debe={this.state.suma_debe}
                       suma_haber={this.state.suma_haber}
                       tipo={"cuenta_corriente"}
-                      footer={
-                        <div className="tabulator-row">
-                          <div className="tabulator-cell">Debe: </div>
-                          <div className="tabulator-cell">Haber: </div>
-                        </div>
-                      }
                     />
                   </TabPane>
                   <TabPane tabId="2">
