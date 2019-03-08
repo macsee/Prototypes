@@ -97,7 +97,30 @@ class Expedientes extends Component {
         data[i].recibido = false;
       }
     }
-    console.log(data);
+
+    this.setState({
+      ...this.state,
+      data_exp: data,
+      select_expediente_id: null
+    });
+  };
+
+  finalizarExp = (destino, new_cant_hojas) => {
+    let data = this.state.data_exp;
+    for (let i = 0; i < data.length; i++) {
+      if (data[i].id === this.state.select_expediente_id) {
+        data[i].pases.push({
+          fecha_pase: new Date().toLocaleDateString(),
+          destino: destino,
+          cant_hojas:
+            data[i].pases[data[i].pases.length - 1].cant_hojas +
+            parseInt(new_cant_hojas)
+        });
+        data[i].recibido = true;
+        data[i].estado = "Finalizado";
+      }
+    }
+
     this.setState({
       ...this.state,
       data_exp: data,
@@ -418,6 +441,8 @@ class Expedientes extends Component {
           )}
           expediente_id={this.state.select_expediente_id}
           hacerPase={this.hacerPase}
+          finalizarExp={this.finalizarExp}
+          oficina={this.state.oficina}
         />
         <Col md={{ size: 12, offset: 0 }} xs={12}>
           <Card>
@@ -494,6 +519,18 @@ class Expedientes extends Component {
                   {this.state.result_exp.pases.length === 0
                     ? ""
                     : this.state.result_exp.iniciador}
+                </Col>
+              </Row>
+              <Row>
+                <Col md={2} className="saldos">
+                  Cantidad de Hojas:
+                </Col>
+                <Col md={2}>
+                  {this.state.result_exp.pases.length === 0
+                    ? ""
+                    : this.state.result_exp.pases[
+                        this.state.result_exp.pases.length - 1
+                      ].cant_hojas}
                 </Col>
               </Row>
               <Row>

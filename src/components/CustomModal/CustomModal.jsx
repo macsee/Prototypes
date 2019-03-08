@@ -52,13 +52,33 @@ class CustomModal extends React.Component {
   }
 
   render() {
+    let finalizar_button = "";
+
+    if (this.props.oficina === "0") {
+      finalizar_button = (
+        <FormGroup>
+          <Button
+            className="modal-button"
+            size="sm"
+            color="danger"
+            onClick={() => {
+              this.props.finalizarExp("G.A.D.I", this.state.cant_hojas);
+              this.toggle();
+            }}
+          >
+            Finalizar
+          </Button>
+        </FormGroup>
+      );
+    }
+
     return (
-      <Modal isOpen={this.state.modal} toggle={this.toggle}>
+      <Modal isOpen={this.state.modal} toggle={this.toggle} size="md">
         <ModalHeader toggle={this.toggle}>Realizar Pase</ModalHeader>
         <ModalBody>
           <Form>
             <Row form>
-              <Col md={5}>
+              <Col md={5} xs={12}>
                 <FormGroup>
                   <Label className="label-modal" for="exampleSelect1">
                     Destinatario
@@ -70,24 +90,27 @@ class CustomModal extends React.Component {
                   />
                 </FormGroup>
               </Col>
-              <Col md={4}>
+              <Col md={2} xs={12}>
                 <FormGroup>
                   <Label className="label-modal" for="exampleSelect2">
-                    Cant. Hojas Agregadas
+                    Cant. Hojas
                   </Label>
-                  <Input
-                    type="text"
-                    name="cant_hojas"
-                    id="cant_hojas"
-                    onChange={this.updateCantHojas}
-                  />
+                  <Col md={12} style={{ paddingLeft: 0 }}>
+                    <Input
+                      type="text"
+                      name="cant_hojas"
+                      id="cant_hojas"
+                      onChange={this.updateCantHojas}
+                    />
+                  </Col>
                 </FormGroup>
               </Col>
-              <Col md={2}>
+              <Col md={2} xs={6} style={{ paddingTop: "5px" }}>
                 <FormGroup>
                   <Button
                     className="modal-button"
-                    color="primary"
+                    size="sm"
+                    color="info"
                     onClick={() => {
                       this.props.hacerPase(
                         this.state.destino,
@@ -96,9 +119,12 @@ class CustomModal extends React.Component {
                       this.toggle();
                     }}
                   >
-                    Pase
+                    Pasar
                   </Button>
                 </FormGroup>
+              </Col>
+              <Col md={3} xs={6} style={{ paddingTop: "5px" }}>
+                {finalizar_button}
               </Col>
             </Row>
           </Form>
