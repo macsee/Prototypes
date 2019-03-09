@@ -25,7 +25,6 @@ class CustomModal extends React.Component {
   }
 
   updateDestino = evt => {
-    console.log(evt);
     this.setState({
       ...this.state,
       destino: evt

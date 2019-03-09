@@ -44,23 +44,69 @@ class Expedientes extends Component {
     concepto: "",
     oficinas: oficinas,
     exp_count: 5,
-    data_exp: expediente_b,
+    data_exp: [],
     result_exp: { pases: [] },
     showModal: false,
     select_expediente_id: null
   };
 
+  componentDidMount() {
+    const getData = () => {
+      fetch("/expedientes", {
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json"
+        },
+        method: "GET"
+      })
+        .then(res => res.json())
+        .then(
+          result => {
+            this.setState({ ...this.state, data_exp: result.expedientes });
+          },
+          error => {
+            console.log(error);
+          }
+        );
+    };
+    getData();
+    // this._interval = window.setInterval(getData, 1000);
+  }
+
+  makeRequest = (method, elemente, fc) => {
+    fetch("/expedientes", {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json"
+      },
+      method: method,
+      body: JSON.stringify(elemente)
+    })
+      .then(res => res.json())
+      .then(fc, error => {
+        console.log(error);
+      });
+  };
+
   changeRecibido = expediente_id => {
     let data = this.state.data_exp;
+    let expediente;
+    let index;
     for (let i = 0; i < data.length; i++) {
       if (data[i].id === expediente_id) {
         data[i].recibido = !data[i].recibido;
+        expediente = data[i];
+        index = i;
       }
     }
-    this.setState({
-      ...this.state,
-      data_exp: data
-    });
+    if (expediente) {
+      this.makeRequest("PUT", expediente, result => {
+        if (result.status === "OK") {
+          data[index] = result.new_version;
+          this.setState({ ...this.state, data_exp: data });
+        }
+      });
+    }
   };
 
   mostrarModal = expediente_id => {
@@ -85,6 +131,8 @@ class Expedientes extends Component {
 
   hacerPase = (destino, new_cant_hojas) => {
     let data = this.state.data_exp;
+    let expediente;
+    let index;
     for (let i = 0; i < data.length; i++) {
       if (data[i].id === this.state.select_expediente_id) {
         data[i].pases.push({
@@ -95,18 +143,28 @@ class Expedientes extends Component {
             parseInt(new_cant_hojas)
         });
         data[i].recibido = false;
+        expediente = data[i];
+        index = i;
       }
     }
-
-    this.setState({
-      ...this.state,
-      data_exp: data,
-      select_expediente_id: null
-    });
+    if (expediente) {
+      this.makeRequest("PUT", expediente, result => {
+        if (result.status === "OK") {
+          data[index] = result.new_version;
+          this.setState({
+            ...this.state,
+            data_exp: data,
+            select_expediente_id: null
+          });
+        }
+      });
+    }
   };
 
   finalizarExp = (destino, new_cant_hojas) => {
     let data = this.state.data_exp;
+    let expediente;
+    let index;
     for (let i = 0; i < data.length; i++) {
       if (data[i].id === this.state.select_expediente_id) {
         data[i].pases.push({
@@ -118,14 +176,22 @@ class Expedientes extends Component {
         });
         data[i].recibido = true;
         data[i].estado = "Finalizado";
+        expediente = data[i];
+        index = i;
       }
     }
-
-    this.setState({
-      ...this.state,
-      data_exp: data,
-      select_expediente_id: null
-    });
+    if (expediente) {
+      this.makeRequest("PUT", expediente, result => {
+        if (result.status === "OK") {
+          data[index] = result.new_version;
+          this.setState({
+            ...this.state,
+            data_exp: data,
+            select_expediente_id: null
+          });
+        }
+      });
+    }
   };
 
   toggle = tab => {
@@ -137,14 +203,31 @@ class Expedientes extends Component {
   };
 
   updateOficina = evt => {
-    this.setState({
-      ...this.state,
-      oficina: evt.target.value,
-      activeTab: evt.target.value === "0" ? "1" : "2",
-      text_oficina: document.getElementById("select_oficina").options[
-        evt.target.value
-      ].text
-    });
+    let oficina = evt.target.value;
+    fetch("/expedientes", {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json"
+      },
+      method: "GET"
+    })
+      .then(res => res.json())
+      .then(
+        result => {
+          this.setState({
+            ...this.state,
+            data_exp: result.expedientes,
+            oficina: oficina,
+            activeTab: oficina === "0" ? "1" : "2",
+            text_oficina: document.getElementById("select_oficina").options[
+              oficina
+            ].text
+          });
+        },
+        error => {
+          console.log(error);
+        }
+      );
   };
 
   updateBusqueda = evt => {
@@ -216,15 +299,18 @@ class Expedientes extends Component {
       estado: "En Curso",
       recibido: false
     };
-
-    this.setState({
-      ...this.state,
-      exp_count: exp_count + 1,
-      data_exp: exp.concat([expte]),
-      cant_hojas: 0,
-      destino: "",
-      iniciador: "",
-      concepto: ""
+    this.makeRequest("POST", expte, result => {
+      if (result.status === "OK") {
+        this.setState({
+          ...this.state,
+          exp_count: exp_count + 1,
+          data_exp: exp.concat([result.new_element]),
+          cant_hojas: 0,
+          destino: "",
+          iniciador: "",
+          concepto: ""
+        });
+      }
     });
   };
 
