@@ -42,12 +42,16 @@ class Expedientes extends Component {
     destino: "",
     iniciador: "",
     concepto: "",
+    motivo: "Equivalencias",
     oficinas: oficinas,
     exp_count: 5,
     data_exp: [],
     result_exp: { pases: [] },
+    results_exp: [],
+    result_exp_selector: [],
     showModal: false,
-    select_expediente_id: null
+    select_expediente_id: null,
+    tipoBusqueda: "Nro. Expediente"
   };
 
   componentDidMount() {
@@ -230,6 +234,27 @@ class Expedientes extends Component {
       );
   };
 
+  updateMotivo = evt => {
+    this.setState({
+      ...this.state,
+      motivo: evt.target.value
+    });
+  };
+
+  updateTipoBusqueda = evt => {
+    this.setState({
+      ...this.state,
+      tipoBusqueda: evt.target.value
+    });
+  };
+
+  updateResultExp = evt => {
+    this.setState({
+      ...this.state,
+      result_exp: this.state.results_exp[evt.target.value]
+    });
+  };
+
   updateBusqueda = evt => {
     this.setState({
       ...this.state,
@@ -284,6 +309,7 @@ class Expedientes extends Component {
       iniciador: this.state.iniciador,
       concepto: this.state.concepto,
       fecha_inicio: new Date().toLocaleDateString(),
+      motivo: this.state.motivo,
       pases: [
         {
           fecha_pase: new Date().toLocaleDateString(),
@@ -308,7 +334,8 @@ class Expedientes extends Component {
           cant_hojas: 0,
           destino: "",
           iniciador: "",
-          concepto: ""
+          concepto: "",
+          motivo: "Equivalencias"
         });
       }
     });
@@ -355,21 +382,42 @@ class Expedientes extends Component {
     });
   };
 
-  busquedaExpedientes = (exp, tabla) => {
-    let row = tabla.filter(value => {
-      return value.id === exp;
-    });
+  busquedaExpedientes = (exp, tipoBusqueda, tabla) => {
+    let results;
+    if (tipoBusqueda === "Nro. Expediente") {
+      results = tabla.filter(value => {
+        return value.id === exp;
+      });
+    } else if (tipoBusqueda === "Motivo") {
+      results = tabla.filter(value => {
+        return value.motivo.includes(exp);
+      });
+    } else {
+      results = tabla.filter(value => {
+        return value.concepto.includes(exp);
+      });
+    }
 
-    return row;
+    return results;
   };
 
   buscar_exp = tabla => {
-    let result = this.busquedaExpedientes(this.state.busqueda, tabla);
-
-    if (result.length !== 0)
+    let results = this.busquedaExpedientes(
+      this.state.busqueda,
+      this.state.tipoBusqueda,
+      tabla
+    );
+    let result_exp_selector = [];
+    for (let i = 0; i < results.length; i++) {
+      const element = results[i];
+      result_exp_selector.push(element.id + " " + element.motivo);
+    }
+    if (results.length !== 0)
       this.setState({
         ...this.state,
-        result_exp: result[0]
+        result_exp: results[0],
+        results_exp: results,
+        result_exp_selector: result_exp_selector
       });
   };
 
@@ -476,7 +524,7 @@ class Expedientes extends Component {
                   />
                 </FormGroup>
               </Col>
-              <Col md={8}>
+              <Col md={7}>
                 <FormGroup>
                   <Label for="exampleSelect1">Concepto</Label>
                   <Input
@@ -486,6 +534,26 @@ class Expedientes extends Component {
                     value={this.state.concepto}
                     onChange={this.updateConcepto}
                   />
+                </FormGroup>
+              </Col>
+              <Col md={2}>
+                <FormGroup>
+                  <Label for="exampleSelect1">Motivo</Label>
+                  <Input
+                    type="select"
+                    name="select_oficina"
+                    id="select_oficina"
+                    defaultValue={this.state.motivo}
+                    onChange={this.updateMotivo}
+                  >
+                    <option value="Equivalencias">Equivalencias</option>
+                    <option value="Horas compensatorias">
+                      Horas compensatorias
+                    </option>
+                    <option value="Homologación Título">
+                      Homologación Título
+                    </option>
+                  </Input>
                 </FormGroup>
               </Col>
               <Col md={6}>
@@ -566,9 +634,25 @@ class Expedientes extends Component {
                 <Row className="row-busqueda">
                   <Col md={4}>
                     <FormGroup>
+                      <Label for="exampleSelect1">Buscar por</Label>
+                      <Input
+                        type="select"
+                        name="select_busqueda"
+                        id="select_busqueda"
+                        defaultValue={this.state.tipoBusqueda}
+                        onChange={this.updateTipoBusqueda}
+                      >
+                        <option value="Nro. Expediente">Nro. Expediente</option>
+                        <option value="Motivo">Motivo</option>
+                        <option value="Concepto">Concepto</option>
+                      </Input>
+                    </FormGroup>
+                  </Col>
+                  <Col md={4}>
+                    <FormGroup>
                       <Input
                         type="text"
-                        placeholder="Nro Expediente"
+                        placeholder={this.state.tipoBusqueda}
                         name="busqueda"
                         id="busqueda"
                         onChange={this.updateBusqueda}
@@ -584,6 +668,28 @@ class Expedientes extends Component {
                     >
                       Buscar
                     </Button>
+                  </Col>
+                </Row>
+                <Row className="row-busqueda">
+                  <Col md={4}>
+                    <FormGroup>
+                      <Label for="exampleSelect1">
+                        Resultado de expedientes
+                      </Label>
+                      <Input
+                        type="select"
+                        name="select_resultado_expediente"
+                        id="select_resultado_expediente"
+                        defaultValue="0"
+                        onChange={this.updateResultExp}
+                      >
+                        {this.state.result_exp_selector.map((text, i) => (
+                          <option key={i} value={i}>
+                            {text}
+                          </option>
+                        ))}
+                      </Input>
+                    </FormGroup>
                   </Col>
                 </Row>
               </Form>
@@ -636,6 +742,16 @@ class Expedientes extends Component {
                       ? ""
                       : this.state.result_exp.estado}
                   </span>
+                </Col>
+              </Row>
+              <Row className="row-busqueda">
+                <Col md={2} className="saldos">
+                  Motivo:
+                </Col>
+                <Col md={9}>
+                  {this.state.result_exp.pases.length === 0
+                    ? ""
+                    : this.state.result_exp.motivo}
                 </Col>
               </Row>
               <Row className="row-busqueda">
