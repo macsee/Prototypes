@@ -17,7 +17,9 @@ import {
   TabPane,
   Nav,
   NavItem,
-  NavLink
+  NavLink,
+  ListGroupItem,
+  ListGroup
 } from "reactstrap";
 
 import CustomModal from "../../components/CustomModal/CustomModal.jsx";
@@ -42,25 +44,77 @@ class Expedientes extends Component {
     destino: "",
     iniciador: "",
     concepto: "",
+    motivo: "Equivalencias",
     oficinas: oficinas,
     exp_count: 5,
-    data_exp: expediente_b,
+    data_exp: [],
     result_exp: { pases: [] },
+    results_exp: [],
+    result_exp_selector: [],
     showModal: false,
-    select_expediente_id: null
+    select_expediente_id: null,
+    tipoBusqueda: "Nro. Expediente",
+    fechaDesde: null,
+    fechaHasta: null
+  };
+
+  componentDidMount() {
+    const getData = () => {
+      fetch("/expedientes", {
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json"
+        },
+        method: "GET"
+      })
+        .then(res => res.json())
+        .then(
+          result => {
+            this.setState({ ...this.state, data_exp: result.expedientes });
+          },
+          error => {
+            console.log(error);
+          }
+        );
+    };
+    getData();
+    // this._interval = window.setInterval(getData, 1000);
+  }
+
+  makeRequest = (method, elemente, fc) => {
+    fetch("/expedientes", {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json"
+      },
+      method: method,
+      body: JSON.stringify(elemente)
+    })
+      .then(res => res.json())
+      .then(fc, error => {
+        console.log(error);
+      });
   };
 
   changeRecibido = expediente_id => {
     let data = this.state.data_exp;
+    let expediente;
+    let index;
     for (let i = 0; i < data.length; i++) {
       if (data[i].id === expediente_id) {
         data[i].recibido = !data[i].recibido;
+        expediente = data[i];
+        index = i;
       }
     }
-    this.setState({
-      ...this.state,
-      data_exp: data
-    });
+    if (expediente) {
+      this.makeRequest("PUT", expediente, result => {
+        if (result.status === "OK") {
+          data[index] = result.new_version;
+          this.setState({ ...this.state, data_exp: data });
+        }
+      });
+    }
   };
 
   mostrarModal = expediente_id => {
@@ -85,6 +139,8 @@ class Expedientes extends Component {
 
   hacerPase = (destino, new_cant_hojas) => {
     let data = this.state.data_exp;
+    let expediente;
+    let index;
     for (let i = 0; i < data.length; i++) {
       if (data[i].id === this.state.select_expediente_id) {
         data[i].pases.push({
@@ -95,18 +151,28 @@ class Expedientes extends Component {
             parseInt(new_cant_hojas)
         });
         data[i].recibido = false;
+        expediente = data[i];
+        index = i;
       }
     }
-
-    this.setState({
-      ...this.state,
-      data_exp: data,
-      select_expediente_id: null
-    });
+    if (expediente) {
+      this.makeRequest("PUT", expediente, result => {
+        if (result.status === "OK") {
+          data[index] = result.new_version;
+          this.setState({
+            ...this.state,
+            data_exp: data,
+            select_expediente_id: null
+          });
+        }
+      });
+    }
   };
 
   finalizarExp = (destino, new_cant_hojas) => {
     let data = this.state.data_exp;
+    let expediente;
+    let index;
     for (let i = 0; i < data.length; i++) {
       if (data[i].id === this.state.select_expediente_id) {
         data[i].pases.push({
@@ -118,14 +184,22 @@ class Expedientes extends Component {
         });
         data[i].recibido = true;
         data[i].estado = "Finalizado";
+        expediente = data[i];
+        index = i;
       }
     }
-
-    this.setState({
-      ...this.state,
-      data_exp: data,
-      select_expediente_id: null
-    });
+    if (expediente) {
+      this.makeRequest("PUT", expediente, result => {
+        if (result.status === "OK") {
+          data[index] = result.new_version;
+          this.setState({
+            ...this.state,
+            data_exp: data,
+            select_expediente_id: null
+          });
+        }
+      });
+    }
   };
 
   toggle = tab => {
@@ -137,13 +211,51 @@ class Expedientes extends Component {
   };
 
   updateOficina = evt => {
+    let oficina = evt.target.value;
+    fetch("/expedientes", {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json"
+      },
+      method: "GET"
+    })
+      .then(res => res.json())
+      .then(
+        result => {
+          this.setState({
+            ...this.state,
+            data_exp: result.expedientes,
+            oficina: oficina,
+            activeTab: oficina === "0" ? "1" : "2",
+            text_oficina: document.getElementById("select_oficina").options[
+              oficina
+            ].text
+          });
+        },
+        error => {
+          console.log(error);
+        }
+      );
+  };
+
+  updateMotivo = evt => {
     this.setState({
       ...this.state,
-      oficina: evt.target.value,
-      activeTab: evt.target.value === "0" ? "1" : "2",
-      text_oficina: document.getElementById("select_oficina").options[
-        evt.target.value
-      ].text
+      motivo: evt.target.value
+    });
+  };
+
+  updateTipoBusqueda = evt => {
+    this.setState({
+      ...this.state,
+      tipoBusqueda: evt.target.value
+    });
+  };
+
+  updateResultExp = index => {
+    this.setState({
+      ...this.state,
+      result_exp: this.state.results_exp[index]
     });
   };
 
@@ -151,6 +263,20 @@ class Expedientes extends Component {
     this.setState({
       ...this.state,
       busqueda: evt.target.value
+    });
+  };
+
+  updateFechaDesde = evt => {
+    this.setState({
+      ...this.state,
+      fechaDesde: new Date(evt.target.value + " 00:00:00")
+    });
+  };
+
+  updateFechaHasta = evt => {
+    this.setState({
+      ...this.state,
+      fechaHasta: new Date(evt.target.value + " 00:00:00")
     });
   };
 
@@ -201,6 +327,7 @@ class Expedientes extends Component {
       iniciador: this.state.iniciador,
       concepto: this.state.concepto,
       fecha_inicio: new Date().toLocaleDateString(),
+      motivo: this.state.motivo,
       pases: [
         {
           fecha_pase: new Date().toLocaleDateString(),
@@ -216,15 +343,19 @@ class Expedientes extends Component {
       estado: "En Curso",
       recibido: false
     };
-
-    this.setState({
-      ...this.state,
-      exp_count: exp_count + 1,
-      data_exp: exp.concat([expte]),
-      cant_hojas: 0,
-      destino: "",
-      iniciador: "",
-      concepto: ""
+    this.makeRequest("POST", expte, result => {
+      if (result.status === "OK") {
+        this.setState({
+          ...this.state,
+          exp_count: exp_count + 1,
+          data_exp: exp.concat([result.new_element]),
+          cant_hojas: 0,
+          destino: "",
+          iniciador: "",
+          concepto: "",
+          motivo: "Equivalencias"
+        });
+      }
     });
   };
 
@@ -269,22 +400,102 @@ class Expedientes extends Component {
     });
   };
 
-  busquedaExpedientes = (exp, tabla) => {
-    let row = tabla.filter(value => {
-      return value.id === exp;
-    });
+  busquedaExpedientes = (exp, tipoBusqueda, fechaDesde, fechaHasta, tabla) => {
+    let results;
 
-    return row;
+    if (tipoBusqueda === "Nro. Expediente") {
+      results = tabla.filter(value => {
+        return value.id === exp;
+      });
+    } else if (tipoBusqueda === "Motivo") {
+      results = tabla.filter(value => {
+        return value.motivo.includes(exp);
+      });
+    } else if (tipoBusqueda === "Iniciador") {
+      results = tabla.filter(value => {
+        return value.iniciador.includes(exp);
+      });
+    } else {
+      results = tabla.filter(value => {
+        return value.concepto.includes(exp);
+      });
+    }
+    if (fechaDesde !== null && fechaHasta !== null) {
+      results = results.filter(value => {
+        let finicio = value.fecha_inicio.split("/");
+
+        finicio = new Date(
+          parseInt(finicio[2]),
+          parseInt(finicio[1]) - 1,
+          parseInt(finicio[0])
+        );
+        return finicio >= fechaDesde && finicio <= fechaHasta;
+      });
+    }
+    return results;
   };
 
   buscar_exp = tabla => {
-    let result = this.busquedaExpedientes(this.state.busqueda, tabla);
+    let results = this.busquedaExpedientes(
+      this.state.busqueda,
+      this.state.tipoBusqueda,
+      this.state.fechaDesde,
+      this.state.fechaHasta,
+      tabla
+    );
+    let result_exp_selector = [];
+    let result_exp = { pases: [] };
+    let results_exp = [];
 
-    if (result.length !== 0)
-      this.setState({
-        ...this.state,
-        result_exp: result[0]
-      });
+    if (results.length !== 0) {
+      for (let i = 0; i < results.length; i++) {
+        const element = results[i];
+        result_exp_selector.push(
+          element.id + " | " + element.iniciador + " | " + element.motivo
+        );
+      }
+      result_exp = results[0];
+      results_exp = results;
+    } else {
+      result_exp_selector.push("No hay resultado");
+    }
+    this.setState({
+      ...this.state,
+      result_exp: result_exp,
+      results_exp: results_exp,
+      result_exp_selector: result_exp_selector
+    });
+  };
+
+  showResultados = () => {
+    let listResult;
+    if (this.state.result_exp_selector.length === 0) return;
+    if (this.state.result_exp_selector[0] !== "No hay resultado") {
+      listResult = (
+        <ListGroup>
+          {this.state.result_exp_selector.map((text, i) => (
+            <ListGroupItem key={i}>
+              <Row>
+                <Col md={10}>{text}</Col>
+                <Col md={2}>
+                  <Button
+                    className="myBotonExp"
+                    color="primary"
+                    size="sm"
+                    onClick={() => this.updateResultExp(i)}
+                  >
+                    Ver
+                  </Button>
+                </Col>
+              </Row>
+            </ListGroupItem>
+          ))}
+        </ListGroup>
+      );
+    } else {
+      listResult = <h2>No hay Resultados!</h2>;
+    }
+    return listResult;
   };
 
   renderTabs = oficina => {
@@ -390,7 +601,7 @@ class Expedientes extends Component {
                   />
                 </FormGroup>
               </Col>
-              <Col md={8}>
+              <Col md={7}>
                 <FormGroup>
                   <Label for="exampleSelect1">Concepto</Label>
                   <Input
@@ -400,6 +611,26 @@ class Expedientes extends Component {
                     value={this.state.concepto}
                     onChange={this.updateConcepto}
                   />
+                </FormGroup>
+              </Col>
+              <Col md={2}>
+                <FormGroup>
+                  <Label for="exampleSelect1">Motivo</Label>
+                  <Input
+                    type="select"
+                    name="select_oficina"
+                    id="select_oficina"
+                    defaultValue={this.state.motivo}
+                    onChange={this.updateMotivo}
+                  >
+                    <option value="Equivalencias">Equivalencias</option>
+                    <option value="Horas compensatorias">
+                      Horas compensatorias
+                    </option>
+                    <option value="Homologación Título">
+                      Homologación Título
+                    </option>
+                  </Input>
                 </FormGroup>
               </Col>
               <Col md={6}>
@@ -478,14 +709,51 @@ class Expedientes extends Component {
             <CardBody>
               <Form>
                 <Row className="row-busqueda">
+                  <Col md={2}>
+                    <FormGroup>
+                      {/* <Label for="exampleSelect1">Buscar por</Label> */}
+                      <Input
+                        type="select"
+                        name="select_busqueda"
+                        id="select_busqueda"
+                        defaultValue={this.state.tipoBusqueda}
+                        onChange={this.updateTipoBusqueda}
+                      >
+                        <option value="Nro. Expediente">Nro. Expediente</option>
+                        <option value="Motivo">Motivo</option>
+                        <option value="Concepto">Concepto</option>
+                        <option value="Iniciador">Iniciador</option>
+                      </Input>
+                    </FormGroup>
+                  </Col>
                   <Col md={4}>
                     <FormGroup>
                       <Input
                         type="text"
-                        placeholder="Nro Expediente"
+                        placeholder="Buscar por"
                         name="busqueda"
                         id="busqueda"
                         onChange={this.updateBusqueda}
+                      />
+                    </FormGroup>
+                  </Col>
+                  <Col md={2}>
+                    <FormGroup>
+                      <Input
+                        type="date"
+                        name="fecha_desde"
+                        id="fecha_desde"
+                        onChange={this.updateFechaDesde}
+                      />
+                    </FormGroup>
+                  </Col>
+                  <Col md={2}>
+                    <FormGroup>
+                      <Input
+                        type="date"
+                        name="fecha_hasta"
+                        id="fecha_hasta"
+                        onChange={this.updateFechaHasta}
                       />
                     </FormGroup>
                   </Col>
@@ -501,71 +769,105 @@ class Expedientes extends Component {
                   </Col>
                 </Row>
               </Form>
-              <Row>
-                <Col md={2} className="saldos">
-                  Fecha Inicio:{" "}
-                </Col>
-                <Col md={2}>
-                  {this.state.result_exp.pases.length === 0
-                    ? ""
-                    : this.state.result_exp.fecha_inicio}
-                </Col>
-              </Row>
-              <Row>
-                <Col md={2} className="saldos">
-                  Iniciador:
-                </Col>
-                <Col md={2}>
-                  {this.state.result_exp.pases.length === 0
-                    ? ""
-                    : this.state.result_exp.iniciador}
-                </Col>
-              </Row>
-              <Row>
-                <Col md={2} className="saldos">
-                  Cantidad de Hojas:
-                </Col>
-                <Col md={2}>
-                  {this.state.result_exp.pases.length === 0
-                    ? ""
-                    : this.state.result_exp.pases[
-                        this.state.result_exp.pases.length - 1
-                      ].cant_hojas}
-                </Col>
-              </Row>
-              <Row>
-                <Col md={2} className="saldos">
-                  Estado:
-                </Col>
-                <Col md={2}>
-                  <span
-                    className={
-                      this.state.result_exp.pases.length !== 0 &&
-                      this.state.result_exp.estado === "Finalizado"
-                        ? "badge badge-success"
-                        : "badge badge-danger"
-                    }
-                  >
-                    {this.state.result_exp.pases.length === 0
-                      ? ""
-                      : this.state.result_exp.estado}
-                  </span>
-                </Col>
-              </Row>
               <Row className="row-busqueda">
-                <Col md={2} className="saldos">
-                  Concepto:
+                <Col md={6}>
+                  <FormGroup>
+                    <Label for="exampleSelect1">Resultado de expedientes</Label>
+                  </FormGroup>
+                  {this.showResultados()}
                 </Col>
-                <Col md={9}>
-                  {this.state.result_exp.pases.length === 0
-                    ? ""
-                    : this.state.result_exp.concepto}
+
+                <Col md={6}>
+                  <FormGroup>
+                    <Label for="exampleSelect1">Detalle de expediente</Label>
+                  </FormGroup>
+                  <Row>
+                    <Col md={4} className="saldos">
+                      Nro. Expediente:{" "}
+                    </Col>
+                    <Col md={8}>
+                      {this.state.result_exp.pases.length === 0
+                        ? ""
+                        : this.state.result_exp.id}
+                    </Col>
+                  </Row>
+                  <Row>
+                    <Col md={4} className="saldos">
+                      Fecha Inicio:{" "}
+                    </Col>
+                    <Col md={8}>
+                      {this.state.result_exp.pases.length === 0
+                        ? ""
+                        : this.state.result_exp.fecha_inicio}
+                    </Col>
+                  </Row>
+                  <Row>
+                    <Col md={4} className="saldos">
+                      Iniciador:
+                    </Col>
+                    <Col md={8}>
+                      {this.state.result_exp.pases.length === 0
+                        ? ""
+                        : this.state.result_exp.iniciador}
+                    </Col>
+                  </Row>
+                  <Row>
+                    <Col md={4} className="saldos">
+                      Cant. Hojas:
+                    </Col>
+                    <Col md={8}>
+                      {this.state.result_exp.pases.length === 0
+                        ? ""
+                        : this.state.result_exp.pases[
+                            this.state.result_exp.pases.length - 1
+                          ].cant_hojas}
+                    </Col>
+                  </Row>
+                  <Row>
+                    <Col md={4} className="saldos">
+                      Estado:
+                    </Col>
+                    <Col md={8}>
+                      <span
+                        className={
+                          this.state.result_exp.pases.length !== 0 &&
+                          this.state.result_exp.estado === "Finalizado"
+                            ? "badge badge-success"
+                            : "badge badge-danger"
+                        }
+                      >
+                        {this.state.result_exp.pases.length === 0
+                          ? ""
+                          : this.state.result_exp.estado}
+                      </span>
+                    </Col>
+                  </Row>
+                  <Row>
+                    <Col md={4} className="saldos">
+                      Motivo:
+                    </Col>
+                    <Col md={8}>
+                      {this.state.result_exp.pases.length === 0
+                        ? ""
+                        : this.state.result_exp.motivo}
+                    </Col>
+                  </Row>
+                  <Row className="row-busqueda">
+                    <Col md={4} className="saldos">
+                      Descripción:
+                    </Col>
+                    <Col md={8}>
+                      {this.state.result_exp.pases.length === 0
+                        ? ""
+                        : this.state.result_exp.concepto}
+                    </Col>
+                  </Row>
+                  <CustomTable
+                    header={expediente_h_busqueda}
+                    body={this.state.result_exp.pases}
+                  />
                 </Col>
               </Row>
-              <CustomTable
-                header={expediente_h_busqueda}
-                body={this.state.result_exp.pases}
-              />
             </CardBody>
           </Card>
         </Col>

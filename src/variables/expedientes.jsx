@@ -16,7 +16,7 @@ const expediente_h_oficina = [
     minWidth: 100
   },
   { title: "Pase", field: "pase", headerSort: false, minWidth: 200 },
-  { title: "Concepto", field: "concepto", headerSort: false, minWidth: 300 },
+  { title: "Motivo", field: "motivo", headerSort: false, minWidth: 300 },
   {
     title: "Recibido",
     field: "recibido",
