@@ -182,6 +182,42 @@ const tbody = [
         ]
       }
     ]
+  },
+  {
+    id: 3,
+    dni: "987654321",
+    apellido: "Pereyra",
+    nombre: "Elena",
+    data: [
+      {
+        fecha_emi: "1/1/2019",
+        comprobante: "FACCAI 0000001",
+        detalle: "Cuota Medicina",
+        debe: 3000,
+        haber: 300,
+        fecha_ven: "15/1/2019",
+        pagado: false,
+        detalles: [
+          {
+            detalle: "Cuota Medicina",
+            debe: 3000,
+            haber: 0
+          },
+          {
+            detalle: "Regla de negocio",
+            debe: 0,
+            haber: 500
+          }
+        ]
+      }
+    ]
+  },
+  {
+    id: 4,
+    dni: "33354321",
+    apellido: "Pavón",
+    nombre: "Diego",
+    data: []
   }
 ];
 

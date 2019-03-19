@@ -29,6 +29,7 @@ class CuentaCorriente extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
+      monto_regla: 0,
       suma_haber: 0,
       suma_debe: 0,
       cobrar_value: 0,
@@ -79,9 +80,16 @@ class CuentaCorriente extends React.Component {
   setData = id => {
     let index = tbody.findIndex(x => x.id === id);
 
+    let valor_regla = 0;
+    if (id === 1) {
+      //Juan Perez
+      valor_regla = 500;
+    }
+
     this.setState(
       {
         ...this.state,
+        monto_regla: valor_regla, //Aparece aunuqe sea igual a 0
         cc: tbody[index].data,
         comprobantes_detalle: this.getDetalles(tbody[index].data)
       },
@@ -270,18 +278,18 @@ class CuentaCorriente extends React.Component {
         {
           detalle: "Regla de negocio",
           debe: 0,
-          haber: 500
+          haber: this.state.monto_regla
         }
       ];
     } else {
       rcount = rcount + 1;
       comp = "REINC 000000" + rcount;
-      detalle = "Reincorporacion";
+      detalle = "Reincorporación";
       detalles = [
         {
-          detalle: "PAGO con CHQUE",
-          debe: 0,
-          haber: value
+          detalle: "Reincorporación",
+          debe: value,
+          haber: 0
         }
       ];
     }
