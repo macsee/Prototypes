@@ -29,10 +29,11 @@ class CuentaCorriente extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
+      monto_regla: 0,
       suma_haber: 0,
       suma_debe: 0,
       cobrar_value: 0,
-      facturar_value: 3000,
+      facturar_value: 3900,
       cc: [],
       comprobantes_detalle: [],
       factura_count: 2,
@@ -40,6 +41,7 @@ class CuentaCorriente extends React.Component {
       reinc_count: 0,
       saldo_vencido: 0,
       saldo_vencer: 0,
+      saldo_adeudado: 0,
       anticipo: 0,
       interes_total: 0,
       interes_individual: 0,
@@ -76,12 +78,30 @@ class CuentaCorriente extends React.Component {
     );
   };
 
+  calcularSaldosParciales = tabla => {
+    let acum = 0;
+    // if (tabla.length === 0) return;
+
+    tabla.map(prop => {
+      return prop.detalles.map(detalle => {
+        acum = acum + detalle.importe;
+        detalle.saldo = acum;
+        return detalle;
+      });
+    });
+
+    return acum;
+  };
+
   setData = id => {
     let index = tbody.findIndex(x => x.id === id);
+    let saldo_adeudado = this.calcularSaldosParciales(tbody[index].data);
 
     this.setState(
       {
         ...this.state,
+        saldo_adeudado: saldo_adeudado,
+        monto_regla: tbody[index].regla, //Aparece aunuqe sea igual a 0
         cc: tbody[index].data,
         comprobantes_detalle: this.getDetalles(tbody[index].data)
       },
@@ -169,6 +189,15 @@ class CuentaCorriente extends React.Component {
     });
   };
 
+  actualizarEstado = tempcc => {
+    this.setState({
+      ...this.state,
+      cc: tempcc,
+      comprobantes_detalle: this.getDetalles(tempcc),
+      saldo_adeudado: tempcc.slice(-1)[0].detalles.slice(-1)[0].saldo
+    });
+  };
+
   emitirComprobante = (
     tipo,
     detalle,
@@ -196,7 +225,10 @@ class CuentaCorriente extends React.Component {
 
     let p = this.pagarFacturasImpagas(t, haber + this.state.anticipo);
 
-    this.calcularTotales(p.t, p.r);
+    this.actualizarEstado(p.t);
+    // this.calcularSaldosParciales(p.t);
+
+    // this.calcularTotales(p.t, p.r);
   };
 
   pagarFacturasImpagas = (t, saldo) => {
@@ -236,8 +268,8 @@ class CuentaCorriente extends React.Component {
           [
             {
               detalle: "PAGO con CHEQUE",
-              debe: 0,
-              haber: value
+              importe: -value,
+              saldo: this.state.saldo_adeudado - value
             }
           ]
         );
@@ -257,31 +289,31 @@ class CuentaCorriente extends React.Component {
 
     fecha_ven.setTime(this.state.fhoy.getTime() + 15 * 24 * 60 * 60 * 1000);
 
-    if (value === 3000) {
+    if (value === 3900) {
       fcount = fcount + 1;
       comp = "FACCAI 000000" + fcount;
       detalle = "Cuota Medicina";
       detalles = [
         {
           detalle: "Cuota Medicina",
-          debe: value,
-          haber: 0
+          importe: value,
+          saldo: this.state.saldo_adeudado + value
         },
         {
           detalle: "Regla de negocio",
-          debe: 0,
-          haber: 500
+          importe: -this.state.monto_regla,
+          saldo: this.state.saldo_adeudado + value - this.state.monto_regla
         }
       ];
     } else {
-      rcount = rcount + 1;
-      comp = "REINC 000000" + rcount;
-      detalle = "Reincorporacion";
+      fcount = fcount + 1;
+      comp = "FACCAI 000000" + fcount;
+      detalle = "Reincorporación";
       detalles = [
         {
-          detalle: "PAGO con CHQUE",
-          debe: 0,
-          haber: value
+          detalle: "Reincorporación",
+          importe: value,
+          saldo: this.state.saldo_adeudado + value
         }
       ];
     }
@@ -307,10 +339,16 @@ class CuentaCorriente extends React.Component {
   };
 
   render() {
+    let saldo_clase = "";
+
+    if (this.state.saldo_adeudado > 0)
+      saldo_clase = "saldo-adeudado saldo-adeudado-contra";
+    else saldo_clase = "saldo-adeudado saldo-adeudado-favor";
+
     return (
       <div className="content">
         <Row>
-          <Col md={{ size: 10, offset: 1 }} xs={12}>
+          <Col md={{ size: 12 }} xs={12}>
             <Card>
               <CardBody>
                 <Form>
@@ -339,8 +377,8 @@ class CuentaCorriente extends React.Component {
                           defaultValue={this.state.facturar_value}
                           onChange={this.updateFacturarValue}
                         >
-                          <option value="3000">Cuota Medicina</option>
-                          <option value="200">Reincorporacion</option>
+                          <option value="3900">Cuota Medicina</option>
+                          <option value="750">Reincorporacion</option>
                         </Input>
                       </FormGroup>
                     </Col>
@@ -380,7 +418,9 @@ class CuentaCorriente extends React.Component {
               </CardBody>
             </Card>
           </Col>
-          <Col md={{ size: 10, offset: 1 }} xs={12}>
+        </Row>
+        <Row>
+          <Col md={{ size: 12 }} xs={12}>
             <Card>
               <CardHeader>
                 <CardTitle tag="h4">Alumno</CardTitle>
@@ -397,8 +437,17 @@ class CuentaCorriente extends React.Component {
                         />
                       </FormGroup>
                     </Col>
-                    <Col className="saldos" md={6}>
+                    <Col md={6}>
                       <Row>
+                        <Col md={2} className="saldo-label">
+                          Saldo:
+                        </Col>
+
+                        <Col md={10} className={saldo_clase}>
+                          $ {this.state.saldo_adeudado}
+                        </Col>
+                      </Row>
+                      {/* <Row>
                         <Col m3={10}>Anticipo:</Col>
                         <Col m3={1}>{this.state.anticipo}</Col>
                       </Row>
@@ -417,14 +466,16 @@ class CuentaCorriente extends React.Component {
                       <Row>
                         <Col m3={10}>Interés Total:</Col>
                         <Col m3={1}>{this.state.interes_total}</Col>
-                      </Row>
+                      </Row> */}
                     </Col>
                   </Row>
                 </Form>
               </CardBody>
             </Card>
           </Col>
-          <Col md={{ size: 10, offset: 1 }} xs={12}>
+        </Row>
+        <Row>
+          <Col md={{ size: 12 }} xs={12}>
             <Card>
               <CardBody>
                 <Nav tabs>
@@ -456,13 +507,28 @@ class CuentaCorriente extends React.Component {
 
                 <TabContent activeTab={this.state.activeTab}>
                   <TabPane tabId="1">
-                    <CustomTable
-                      header={cuenta_corriente_head}
-                      body={this.state.comprobantes_detalle}
-                      suma_debe={this.state.suma_debe}
-                      suma_haber={this.state.suma_haber}
-                      tipo={"cuenta_corriente"}
-                    />
+                    <Row>
+                      <Col md={{ size: 12 }} xs={12}>
+                        {/* <Label for="cobrarLabel">Cuenta Corriente</Label> */}
+                        <CustomTable
+                          header={cuenta_corriente_head}
+                          body={this.state.comprobantes_detalle}
+                          suma_debe={this.state.suma_debe}
+                          suma_haber={this.state.suma_haber}
+                          tipo={"cuenta_corriente"}
+                        />
+                      </Col>
+                      {/* <Col md={{ size: 7 }} xs={12}>
+                        <Label for="cobrarLabel">Comprobantes</Label>
+                        <CustomTable
+                          header={comprobante_head}
+                          body={this.state.cc}
+                          suma_debe={this.state.suma_debe}
+                          suma_haber={this.state.suma_haber}
+                          tipo={"comprobante"}
+                        />
+                      </Col> */}
+                    </Row>
                   </TabPane>
                   <TabPane tabId="2">
                     <CustomTable
