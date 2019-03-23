@@ -14,7 +14,8 @@ class CustomTable extends React.Component {
         columns={this.props.header}
         data={this.props.body}
         options={options}
-        responsiveLayout="true"
+        layout={"fitData"}
+        // responsiveLayout="true"
         footerElement={this.props.footer}
         cellClick={(e, cell) => {
           this.props.changeStateFromTable(cell);
