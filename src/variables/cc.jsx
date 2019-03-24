@@ -9,6 +9,7 @@ const comprobante_head = [
   { title: "Comprobante", field: "comprobante", headerSort: false },
   { title: "Detalle", field: "detalle", headerSort: false },
   { title: "Importe", field: "importe", headerSort: false },
+  { title: "Adeudado", field: "importe_adeudado", headerSort: false },
   // { title: "Haber", field: "haber", headerSort: false },
   {
     title: "Pagado",
@@ -88,6 +89,7 @@ const tbody = [
         importe: 2500,
         fecha_ven: "15/1/2019",
         pagado: true,
+        importe_adeudado: 0,
         detalles: [
           {
             detalle: "Cuota Medicina",
@@ -103,9 +105,10 @@ const tbody = [
         fecha_emi: "5/1/2019",
         comprobante: "RI 0000001",
         detalle: "PAGO",
-        importe: 3000,
+        importe: -3000,
         fecha_ven: "5/1/2019",
         pagado: true,
+        importe_adeudado: undefined,
         detalles: [
           {
             detalle: "PAGO con CHEQUE",
@@ -120,6 +123,7 @@ const tbody = [
         importe: 2500,
         fecha_ven: "15/2/2019",
         pagado: false,
+        importe_adeudado: 2500,
         detalles: [
           {
             detalle: "Cuota Medicina",
@@ -146,7 +150,8 @@ const tbody = [
         detalle: "Cuota Medicina",
         importe: 2700,
         fecha_ven: "15/1/2019",
-        pagado: false,
+        pagado: true,
+        importe_adeudado: 0,
         detalles: [
           {
             detalle: "Cuota Medicina",
@@ -165,6 +170,7 @@ const tbody = [
         importe: 2700,
         fecha_ven: "15/2/2019",
         pagado: false,
+        importe_adeudado: 400,
         detalles: [
           {
             detalle: "Cuota Medicina",
@@ -180,9 +186,10 @@ const tbody = [
         fecha_emi: "5/1/2019",
         comprobante: "RI 0000011",
         detalle: "PAGO",
-        importe: 5000,
+        importe: -5000,
         fecha_ven: "5/1/2019",
         pagado: true,
+        importe_adeudado: undefined,
         detalles: [
           {
             detalle: "PAGO con DEBITO",
@@ -206,10 +213,11 @@ const tbody = [
         importe: 2700,
         fecha_ven: "15/1/2019",
         pagado: false,
+        importe_adeudado: 2700,
         detalles: [
           {
             detalle: "Cuota Medicina",
-            importe: 3000
+            importe: 2700
           }
         ]
       }
@@ -237,6 +245,7 @@ const tbody = [
         importe: 3400,
         fecha_ven: "17/10/2018",
         pagado: true,
+        importe_adeudado: 0,
         detalles: [
           {
             detalle: "Cuota Medicina",
@@ -255,6 +264,7 @@ const tbody = [
         importe: 1000,
         fecha_ven: "21/10/2018",
         pagado: true,
+        importe_adeudado: 0,
         detalles: [
           {
             detalle: "Curso RCP",
@@ -269,6 +279,7 @@ const tbody = [
         importe: 3400,
         fecha_ven: "25/10/2018",
         pagado: true,
+        importe_adeudado: undefined,
         detalles: [
           {
             detalle: "Paga con Cheque",
@@ -283,6 +294,7 @@ const tbody = [
         importe: 3940,
         fecha_ven: "18/11/2018",
         pagado: true,
+        importe_adeudado: 0,
         detalles: [
           {
             detalle: "Cuota Medicina",
@@ -301,6 +313,7 @@ const tbody = [
         importe: 750,
         fecha_ven: "30/11/2018",
         pagado: true,
+        importe_adeudado: 0,
         detalles: [
           {
             detalle: "Reincorporación",
@@ -312,9 +325,10 @@ const tbody = [
         fecha_emi: "20/11/2018",
         comprobante: "RI 0000032",
         detalle: "PAGO",
-        importe: 5690,
+        importe: -5690,
         fecha_ven: "5/12/2018",
         pagado: true,
+        importe_adeudado: undefined,
         detalles: [
           {
             detalle: "PAGO con TRANSF.",
@@ -329,6 +343,7 @@ const tbody = [
         importe: 3900,
         fecha_ven: "17/12/2018",
         pagado: true,
+        importe_adeudado: 0,
         detalles: [
           {
             detalle: "Cuota Medicina",
@@ -343,6 +358,7 @@ const tbody = [
         importe: 500,
         fecha_ven: "29/12/2018",
         pagado: true,
+        importe_adeudado: 0,
         detalles: [
           {
             detalle: "Curso",
@@ -357,6 +373,7 @@ const tbody = [
         importe: 4076,
         fecha_ven: "18/1/2019",
         pagado: true,
+        importe_adeudado: 0,
         detalles: [
           {
             detalle: "Cuota Medicina",
@@ -372,9 +389,10 @@ const tbody = [
         fecha_emi: "5/1/2019",
         comprobante: "RI 0000033",
         detalle: "PAGO",
-        importe: 3900,
+        importe: -3900,
         fecha_ven: "20/1/2019",
         pagado: true,
+        importe_adeudado: undefined,
         detalles: [
           {
             detalle: "PAGO con TRANSF.",
@@ -390,6 +408,7 @@ const tbody = [
         haber: 0,
         fecha_ven: "21/2/2019",
         pagado: true,
+        importe_adeudado: 0,
         detalles: [
           {
             detalle: "Cuota Medicina",
@@ -405,9 +424,220 @@ const tbody = [
         fecha_emi: "9/2/2019",
         comprobante: "RI 0000034",
         detalle: "PAGO",
-        importe: 10000,
+        importe: -10000,
         fecha_ven: "24/2/2019",
         pagado: true,
+        importe_adeudado: undefined,
+        detalles: [
+          {
+            detalle: "PAGO con TRANSF.",
+            importe: -10000
+          }
+        ]
+      }
+    ]
+  },
+  {
+    id: 6,
+    dni: "41941923",
+    apellido: "Palma",
+    nombre: "Vilma",
+    regla: 500,
+    data: [
+      {
+        fecha_emi: "2/10/2018",
+        comprobante: "FACCAI 0000031",
+        detalle: "Cuota Medicina",
+        importe: 3400,
+        fecha_ven: "17/10/2018",
+        pagado: true,
+        importe_adeudado: 0,
+        detalles: [
+          {
+            detalle: "Cuota Medicina",
+            importe: 3900
+          },
+          {
+            detalle: "Regla de negocio",
+            importe: -500
+          }
+        ]
+      },
+      {
+        fecha_emi: "6/10/2018",
+        comprobante: "FACCAI 0000032",
+        detalle: "Curso RCP",
+        importe: 1000,
+        fecha_ven: "21/10/2018",
+        pagado: true,
+        importe_adeudado: 0,
+        detalles: [
+          {
+            detalle: "Curso RCP",
+            importe: 1000
+          }
+        ]
+      },
+      {
+        fecha_emi: "10/10/2018",
+        comprobante: "RI 0000031",
+        detalle: "Paga con Cheque",
+        importe: 3400,
+        fecha_ven: "25/10/2018",
+        pagado: true,
+        importe_adeudado: undefined,
+        detalles: [
+          {
+            detalle: "Paga con Cheque",
+            importe: -3400
+          }
+        ]
+      },
+      {
+        fecha_emi: "3/11/2018",
+        comprobante: "FACCAI 0000033",
+        detalle: "Cuota Medicina",
+        importe: 3940,
+        fecha_ven: "18/11/2018",
+        pagado: true,
+        importe_adeudado: 0,
+        detalles: [
+          {
+            detalle: "Cuota Medicina",
+            importe: 3900
+          },
+          {
+            detalle: "Intereses",
+            importe: 40
+          }
+        ]
+      },
+      {
+        fecha_emi: "15/11/2018",
+        comprobante: "FACCAI 0000034",
+        detalle: "Reincorporación",
+        importe: 750,
+        fecha_ven: "30/11/2018",
+        pagado: true,
+        importe_adeudado: 0,
+        detalles: [
+          {
+            detalle: "Reincorporación",
+            importe: 750
+          }
+        ]
+      },
+      {
+        fecha_emi: "20/11/2018",
+        comprobante: "RI 0000032",
+        detalle: "PAGO",
+        importe: -5690,
+        fecha_ven: "5/12/2018",
+        pagado: true,
+        importe_adeudado: undefined,
+        detalles: [
+          {
+            detalle: "PAGO con TRANSF.",
+            importe: -5690
+          }
+        ]
+      },
+      {
+        fecha_emi: "2/12/2018",
+        comprobante: "FACCAI 0000035",
+        detalle: "Cuota Medicina",
+        importe: 3900,
+        fecha_ven: "17/12/2018",
+        pagado: true,
+        importe_adeudado: 0,
+        detalles: [
+          {
+            detalle: "Cuota Medicina",
+            importe: 3900
+          },
+          {
+            detalle: "Regla de negocio",
+            importe: -500
+          }
+        ]
+      },
+      {
+        fecha_emi: "14/12/2018",
+        comprobante: "FACCAI 0000036",
+        detalle: "Curso",
+        importe: 500,
+        fecha_ven: "29/12/2018",
+        pagado: true,
+        importe_adeudado: 0,
+        detalles: [
+          {
+            detalle: "Curso",
+            importe: 500
+          }
+        ]
+      },
+      {
+        fecha_emi: "3/1/2019",
+        comprobante: "FACCAI 0000037",
+        detalle: "Cuota Medicina",
+        importe: 4076,
+        fecha_ven: "18/1/2019",
+        pagado: true,
+        importe_adeudado: 0,
+        detalles: [
+          {
+            detalle: "Cuota Medicina",
+            importe: 3900
+          },
+          {
+            detalle: "Intereses",
+            importe: 156
+          }
+        ]
+      },
+      {
+        fecha_emi: "5/1/2019",
+        comprobante: "RI 0000033",
+        detalle: "PAGO",
+        importe: -3900,
+        fecha_ven: "20/1/2019",
+        pagado: true,
+        importe_adeudado: undefined,
+        detalles: [
+          {
+            detalle: "PAGO con TRANSF.",
+            importe: -3900
+          }
+        ]
+      },
+      {
+        fecha_emi: "6/2/2019",
+        comprobante: "FACCAI 0000038",
+        detalle: "Cuota Medicina",
+        importe: 4083,
+        haber: 0,
+        fecha_ven: "21/2/2019",
+        pagado: true,
+        importe_adeudado: 0,
+        detalles: [
+          {
+            detalle: "Cuota Medicina",
+            importe: 3900
+          },
+          {
+            detalle: "Intereses",
+            importe: 162
+          }
+        ]
+      },
+      {
+        fecha_emi: "9/2/2019",
+        comprobante: "RI 0000034",
+        detalle: "PAGO",
+        importe: -10000,
+        fecha_ven: "24/2/2019",
+        pagado: true,
+        importe_adeudado: undefined,
         detalles: [
           {
             detalle: "PAGO con TRANSF.",

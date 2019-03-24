@@ -25,6 +25,10 @@ import { cuenta_corriente_head, comprobante_head, tbody } from "variables/cc";
 import Button from "components/CustomButton/CustomButton.jsx";
 import CustomTable from "components/CustomTable/CustomTable.jsx";
 
+// TODO: sacar valor pagado true/false y verificar importe adeudado para pintar de verde
+// TODO: no se ponene en verde los pagados
+// TODO: al usuario Pavon no se le pueden emitir comprobantes
+
 class CuentaCorriente extends React.Component {
   constructor(props) {
     super(props);
@@ -201,11 +205,13 @@ class CuentaCorriente extends React.Component {
   emitirComprobante = (
     tipo,
     detalle,
-    debe,
-    haber,
+    importe,
+    // debe,
+    // haber,
     fecha_ven,
     pagado,
-    detalles
+    detalles,
+    importe_adeudado = undefined
   ) => {
     if (this.state.cc.length === 0) return;
     const tempcc = this.state.cc;
@@ -215,15 +221,17 @@ class CuentaCorriente extends React.Component {
         fecha_emi: this.state.fhoy.toLocaleDateString(),
         comprobante: tipo,
         detalle: detalle,
-        debe: debe,
-        haber: haber,
+        importe: importe,
+        // debe: debe,
+        // haber: haber,
         fecha_ven: fecha_ven.toLocaleDateString(),
         pagado: pagado,
-        detalles: detalles
+        detalles: detalles,
+        importe_adeudado: importe_adeudado
       }
     ]);
 
-    let p = this.pagarFacturasImpagas(t, haber + this.state.anticipo);
+    let p = this.pagarFacturasImpagas(t, importe);
 
     this.actualizarEstado(p.t);
     // this.calcularSaldosParciales(p.t);
@@ -261,8 +269,7 @@ class CuentaCorriente extends React.Component {
         this.emitirComprobante(
           "RI 000000" + count,
           "PAGO",
-          0,
-          value,
+          -value,
           this.state.fhoy,
           true,
           [
@@ -288,23 +295,32 @@ class CuentaCorriente extends React.Component {
     let fecha_ven = new Date();
 
     fecha_ven.setTime(this.state.fhoy.getTime() + 15 * 24 * 60 * 60 * 1000);
-
+    let saldo_adeudado = this.state.saldo_adeudado;
     if (value === 3900) {
       fcount = fcount + 1;
       comp = "FACCAI 000000" + fcount;
       detalle = "Cuota Medicina";
-      detalles = [
-        {
-          detalle: "Cuota Medicina",
-          importe: value,
-          saldo: this.state.saldo_adeudado + value
-        },
-        {
+      detalles = [];
+      if (saldo_adeudado > 0) {
+        let interes_facaii = saldo_adeudado * 0.04;
+        detalles.push({
+          detalle: "Interes",
+          importe: interes_facaii,
+          saldo: saldo_adeudado + interes_facaii //para que se usa este valor?
+        });
+      }
+      detalles.push({
+        detalle: "Cuota Medicina",
+        importe: value,
+        saldo: saldo_adeudado + value
+      });
+      if (saldo_adeudado <= 0) {
+        detalles.push({
           detalle: "Regla de negocio",
           importe: -this.state.monto_regla,
-          saldo: this.state.saldo_adeudado + value - this.state.monto_regla
-        }
-      ];
+          saldo: saldo_adeudado + value - this.state.monto_regla
+        });
+      }
     } else {
       fcount = fcount + 1;
       comp = "FACCAI 000000" + fcount;
@@ -313,11 +329,15 @@ class CuentaCorriente extends React.Component {
         {
           detalle: "Reincorporación",
           importe: value,
-          saldo: this.state.saldo_adeudado + value
+          saldo: saldo_adeudado + value
         }
       ];
     }
 
+    let value_total = detalles.reduce(
+      (total, detalle) => total + detalle.importe,
+      0
+    );
     this.setState(
       {
         ...this.state,
@@ -328,11 +348,11 @@ class CuentaCorriente extends React.Component {
         this.emitirComprobante(
           comp,
           detalle,
-          value,
-          0,
+          value_total,
           fecha_ven,
           false,
-          detalles
+          detalles,
+          value_total
         );
       }
     );
@@ -534,7 +554,7 @@ class CuentaCorriente extends React.Component {
                     <CustomTable
                       header={comprobante_head}
                       body={this.state.cc}
-                      suma_debe={this.state.suma_debe}
+                      importe={this.state.suma_debe}
                       suma_haber={this.state.suma_haber}
                       tipo={"comprobante"}
                     />
