@@ -128,8 +128,6 @@ class CuentaCorriente extends React.Component {
   };
 
   calcularTotales = tempcc => {
-    let suma_d = 0;
-    let suma_h = 0;
     let fhoy = this.state.fhoy;
     let userSaldoVencer = 0;
 
@@ -171,10 +169,10 @@ class CuentaCorriente extends React.Component {
     tipo,
     detalle,
     importe,
-    fecha_ven,
+    fechaVencimiento,
     pagado,
     detalles,
-    importe_adeudado = undefined
+    importeAdeudado = undefined
   ) => {
     const tempcc = this.state.userCC;
     let t = tempcc.concat([
@@ -183,10 +181,10 @@ class CuentaCorriente extends React.Component {
         comprobante: tipo,
         detalle: detalle,
         importe: importe,
-        fecha_ven: fecha_ven.toLocaleDateString(),
+        fecha_ven: fechaVencimiento.toLocaleDateString(),
         pagado: pagado,
         detalles: detalles,
-        importe_adeudado: importe_adeudado
+        importe_adeudado: importeAdeudado
       }
     ]);
 
@@ -204,10 +202,10 @@ class CuentaCorriente extends React.Component {
     for (var i in t) {
       if (t[i].importe_adeudado > 0) {
         if (resto < 0) {
-          let parte_de_pago =
+          let parteDePago =
             -resto > t[i].importe_adeudado ? -t[i].importe_adeudado : resto;
-          t[i].importe_adeudado += parte_de_pago;
-          resto += parte_de_pago;
+          t[i].importe_adeudado += parteDePago;
+          resto += parteDePago;
         } else {
           break;
         }
@@ -253,9 +251,11 @@ class CuentaCorriente extends React.Component {
     let fcount = this.state.globalFacturaCount;
     let rcount = this.state.globalReincCount;
 
-    let fecha_ven = new Date();
+    let fechaVencimiento = new Date();
 
-    fecha_ven.setTime(this.state.fhoy.getTime() + 15 * 24 * 60 * 60 * 1000);
+    fechaVencimiento.setTime(
+      this.state.fhoy.getTime() + 15 * 24 * 60 * 60 * 1000
+    );
     let userSaldoAdeudado = this.state.userSaldoAdeudado;
     if (value === 3900) {
       fcount = fcount + 1;
@@ -263,11 +263,11 @@ class CuentaCorriente extends React.Component {
       detalle = "Cuota Medicina";
       detalles = [];
       if (this.state.userSaldoAdeudado > 0) {
-        let interes_facaii = userSaldoAdeudado * 0.04;
-        userSaldoAdeudado += interes_facaii;
+        let interesFacaii = userSaldoAdeudado * 0.04;
+        userSaldoAdeudado += interesFacaii;
         detalles.push({
           detalle: "Interes",
-          importe: interes_facaii,
+          importe: interesFacaii,
           saldo: userSaldoAdeudado
         });
       }
@@ -297,7 +297,7 @@ class CuentaCorriente extends React.Component {
         }
       ];
     }
-    let value_total = detalles.reduce(
+    let valueTotal = detalles.reduce(
       (total, detalle) => total + detalle.importe,
       0
     );
@@ -311,22 +311,22 @@ class CuentaCorriente extends React.Component {
         this.emitirComprobante(
           comp,
           detalle,
-          value_total,
-          fecha_ven,
+          valueTotal,
+          fechaVencimiento,
           false,
           detalles,
-          value_total
+          valueTotal
         );
       }
     );
   };
 
   render() {
-    let saldo_clase = "";
+    let saldoClase = "";
 
     if (this.state.userSaldoAdeudado > 0)
-      saldo_clase = "saldo-adeudado saldo-adeudado-contra";
-    else saldo_clase = "saldo-adeudado saldo-adeudado-favor";
+      saldoClase = "saldo-adeudado saldo-adeudado-contra";
+    else saldoClase = "saldo-adeudado saldo-adeudado-favor";
 
     return (
       <div className="content">
@@ -425,7 +425,7 @@ class CuentaCorriente extends React.Component {
                         <Col md={3} className="saldo-label">
                           Saldo:
                         </Col>
-                        <Col md={9} className={saldo_clase}>
+                        <Col md={9} className={saldoClase}>
                           $ {this.state.userSaldoAdeudado}
                         </Col>
                       </Row>
