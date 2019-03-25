@@ -123,7 +123,7 @@ const tbody = [
         importe: 2500,
         fecha_ven: "15/2/2019",
         pagado: false,
-        importe_adeudado: 2500,
+        importe_adeudado: 2000,
         detalles: [
           {
             detalle: "Cuota Medicina",

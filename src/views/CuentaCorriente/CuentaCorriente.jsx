@@ -24,35 +24,54 @@ import {
 import { cuenta_corriente_head, comprobante_head, tbody } from "variables/cc";
 import Button from "components/CustomButton/CustomButton.jsx";
 import CustomTable from "components/CustomTable/CustomTable.jsx";
+import { maxHeaderSize } from "http";
 
-// TODO: sacar valor pagado true/false y verificar importe adeudado para pintar de verde
-// TODO: no se ponene en verde los pagados
-// TODO: al usuario Pavon no se le pueden emitir comprobantes
+// TODO: no se ponen en verde los pagados
+// TODO: si hay saldo a favor no se cancela la factura emitida
+// TODO: el interes se calcula siempre que se factura y no si los saldos estan vencidos
 
 class CuentaCorriente extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      monto_regla: 0,
-      suma_haber: 0,
-      suma_debe: 0,
-      cobrar_value: 0,
-      facturar_value: 3900,
-      cc: [],
-      comprobantes_detalle: [],
-      factura_count: 2,
-      ri_count: 1,
-      reinc_count: 0,
-      saldo_vencido: 0,
-      saldo_vencer: 0,
-      saldo_adeudado: 0,
-      anticipo: 0,
-      interes_total: 0,
-      interes_individual: 0,
+      globalFacturaCount: 2,
+      globalRiCount: 1,
+      globalReincCount: 0,
+      fhoy: new Date(),
       activeTab: "1",
-      fhoy: new Date()
+      inputCobrarValor: 0,
+      inputFacturarValor: 3900,
+      userMontoRegla: 0,
+      userSaldoAdeudado: 0,
+      userCC: [],
+      userComprobantesDetalle: [],
+      userSaldoVencer: 0 // FIX: se puede borrar
     };
   }
+
+  componentDidMount = () => {
+    this.calcularTotales(this.state.userCC);
+  };
+
+  updateCobrarValue = evt => {
+    this.setState({ ...this.state, inputCobrarValor: evt.target.value });
+  };
+
+  updateFacturarValue = evt => {
+    this.setState({ ...this.state, inputFacturarValor: evt.target.value });
+  };
+
+  updateFecha = evt => {
+    this.setState(
+      {
+        ...this.state,
+        fhoy: new Date(evt.target.value + " 00:00:00")
+      },
+      function() {
+        this.calcularTotales(this.state.userCC);
+      }
+    );
+  };
 
   toggle = tab => {
     if (this.state.activeTab !== tab) {
@@ -64,28 +83,20 @@ class CuentaCorriente extends React.Component {
 
   getDetalles = tbody => {
     if (tbody.length === 0) return [];
-
     return [].concat.apply(
       [],
       tbody.map(prop => {
         return prop.detalles.map(detalle => {
           detalle.fecha_emi = prop.fecha_emi;
-          // new_d = Object.assign(
-          //   {},
-          //   fecha_emi: prop.fecha_emi,
-          //   new_d
-          // );
-          // return new_d;
           return detalle;
         });
       })
     );
   };
 
+  // TODO: Utilizar reduce en vez de map
   calcularSaldosParciales = tabla => {
     let acum = 0;
-    // if (tabla.length === 0) return;
-
     tabla.map(prop => {
       return prop.detalles.map(detalle => {
         acum = acum + detalle.importe;
@@ -93,24 +104,21 @@ class CuentaCorriente extends React.Component {
         return detalle;
       });
     });
-
     return acum;
   };
 
   setData = id => {
     let index = tbody.findIndex(x => x.id === id);
-    let saldo_adeudado = this.calcularSaldosParciales(tbody[index].data);
-
     this.setState(
       {
         ...this.state,
-        saldo_adeudado: saldo_adeudado,
-        monto_regla: tbody[index].regla, //Aparece aunuqe sea igual a 0
-        cc: tbody[index].data,
-        comprobantes_detalle: this.getDetalles(tbody[index].data)
+        userSaldoAdeudado: this.calcularSaldosParciales(tbody[index].data),
+        userMontoRegla: tbody[index].regla,
+        userCC: tbody[index].data,
+        userComprobantesDetalle: this.getDetalles(tbody[index].data)
       },
       function() {
-        this.calcularTotales(this.state.cc, this.state.anticipo);
+        this.calcularTotales(this.state.userCC);
       }
     );
   };
@@ -119,48 +127,16 @@ class CuentaCorriente extends React.Component {
     return fhoy > fven;
   };
 
-  componentDidMount = () => {
-    // this.actualizar();
-    this.calcularTotales(this.state.cc, this.state.anticipo);
-  };
-
-  updateCobrarValue = evt => {
-    this.setState({ ...this.state, cobrar_value: evt.target.value });
-  };
-
-  updateFacturarValue = evt => {
-    this.setState({ ...this.state, facturar_value: evt.target.value });
-  };
-
-  updateFecha = evt => {
-    this.setState(
-      {
-        ...this.state,
-        fhoy: new Date(evt.target.value + " 00:00:00")
-      },
-      function() {
-        this.calcularTotales(this.state.cc, this.state.anticipo);
-      }
-    );
-  };
-
-  calcularTotales = (tempcc, resto) => {
+  calcularTotales = tempcc => {
     let suma_d = 0;
     let suma_h = 0;
     let fhoy = this.state.fhoy;
-    let anticipo = 0;
-    let saldo_vencer = 0;
-    let saldo_vencido = 0;
-    let interes_individual = 0;
+    let userSaldoVencer = 0;
 
     if (tempcc.length === 0) return;
 
     tempcc.map(prop => {
-      suma_d = suma_d + prop.debe;
-      suma_h = suma_h + prop.haber;
-
       let fven = prop.fecha_ven.split("/");
-
       fven = new Date(
         parseInt(fven[2]),
         parseInt(fven[1]) - 1,
@@ -169,36 +145,25 @@ class CuentaCorriente extends React.Component {
 
       prop.vencido = false;
       if (!prop.pagado && this.isVencida(fhoy, fven)) {
-        saldo_vencido += prop.debe;
         prop.vencido = true;
-        let msPerDay = 24 * 60 * 60 * 1000; // Number of milliseconds per day
-        let daysLeft = Math.round((fhoy.getTime() - fven.getTime()) / msPerDay);
-        interes_individual += Math.round(daysLeft * (prop.debe * 0.0013));
       } else if (!prop.pagado && !this.isVencida(fhoy, fven)) {
-        saldo_vencer += prop.debe;
+        userSaldoVencer += prop.debe;
       }
     });
-    anticipo += resto;
     this.setState({
       ...this.state,
-      cc: tempcc,
-      suma_debe: suma_d,
-      suma_haber: suma_h,
-      saldo_vencer: saldo_vencer,
-      saldo_vencido: saldo_vencido,
-      anticipo: anticipo,
-      comprobantes_detalle: this.getDetalles(tempcc),
-      interes_total: saldo_vencido * 0.04,
-      interes_individual: interes_individual
+      userCC: tempcc,
+      userSaldoVencer: userSaldoVencer,
+      userComprobantesDetalle: this.getDetalles(tempcc)
     });
   };
 
   actualizarEstado = tempcc => {
     this.setState({
       ...this.state,
-      cc: tempcc,
-      comprobantes_detalle: this.getDetalles(tempcc),
-      saldo_adeudado: tempcc.slice(-1)[0].detalles.slice(-1)[0].saldo
+      userCC: tempcc,
+      userComprobantesDetalle: this.getDetalles(tempcc),
+      userSaldoAdeudado: tempcc.slice(-1)[0].detalles.slice(-1)[0].saldo
     });
   };
 
@@ -206,24 +171,18 @@ class CuentaCorriente extends React.Component {
     tipo,
     detalle,
     importe,
-    // debe,
-    // haber,
     fecha_ven,
     pagado,
     detalles,
     importe_adeudado = undefined
   ) => {
-    if (this.state.cc.length === 0) return;
-    const tempcc = this.state.cc;
-
+    const tempcc = this.state.userCC;
     let t = tempcc.concat([
       {
         fecha_emi: this.state.fhoy.toLocaleDateString(),
         comprobante: tipo,
         detalle: detalle,
         importe: importe,
-        // debe: debe,
-        // haber: haber,
         fecha_ven: fecha_ven.toLocaleDateString(),
         pagado: pagado,
         detalles: detalles,
@@ -234,19 +193,21 @@ class CuentaCorriente extends React.Component {
     let p = this.pagarFacturasImpagas(t, importe);
 
     this.actualizarEstado(p.t);
-    // this.calcularSaldosParciales(p.t);
-
-    // this.calcularTotales(p.t, p.r);
   };
 
   pagarFacturasImpagas = (t, saldo) => {
-    let resto = saldo;
+    let resto =
+      this.state.userSaldoAdeudado < 0
+        ? saldo + this.state.userSaldoAdeudado
+        : saldo;
 
-    for (var l in t) {
-      if (!t[l].pagado) {
-        if (resto >= t[l].debe) {
-          t[l].pagado = true;
-          resto = resto - t[l].debe;
+    for (var i in t) {
+      if (t[i].importe_adeudado > 0) {
+        if (resto < 0) {
+          let parte_de_pago =
+            -resto > t[i].importe_adeudado ? -t[i].importe_adeudado : resto;
+          t[i].importe_adeudado += parte_de_pago;
+          resto += parte_de_pago;
         } else {
           break;
         }
@@ -256,14 +217,14 @@ class CuentaCorriente extends React.Component {
   };
 
   cobrar = () => {
-    let value = parseInt(this.state.cobrar_value);
-    let count = this.state.ri_count + 1;
+    let value = parseInt(this.state.inputCobrarValor);
+    let count = this.state.globalRiCount + 1;
     if (value === 0 || isNaN(value)) return;
 
     this.setState(
       {
         ...this.state,
-        ri_count: count
+        globalRiCount: count
       },
       function() {
         this.emitirComprobante(
@@ -276,7 +237,7 @@ class CuentaCorriente extends React.Component {
             {
               detalle: "PAGO con CHEQUE",
               importe: -value,
-              saldo: this.state.saldo_adeudado - value
+              saldo: this.state.userSaldoAdeudado - value
             }
           ]
         );
@@ -288,37 +249,40 @@ class CuentaCorriente extends React.Component {
     let comp;
     let detalle;
     let detalles;
-    let value = parseInt(this.state.facturar_value);
-    let fcount = this.state.factura_count;
-    let rcount = this.state.reinc_count;
+    let value = parseInt(this.state.inputFacturarValor);
+    let fcount = this.state.globalFacturaCount;
+    let rcount = this.state.globalReincCount;
 
     let fecha_ven = new Date();
 
     fecha_ven.setTime(this.state.fhoy.getTime() + 15 * 24 * 60 * 60 * 1000);
-    let saldo_adeudado = this.state.saldo_adeudado;
+    let userSaldoAdeudado = this.state.userSaldoAdeudado;
     if (value === 3900) {
       fcount = fcount + 1;
       comp = "FACCAI 000000" + fcount;
       detalle = "Cuota Medicina";
       detalles = [];
-      if (saldo_adeudado > 0) {
-        let interes_facaii = saldo_adeudado * 0.04;
+      if (this.state.userSaldoAdeudado > 0) {
+        let interes_facaii = userSaldoAdeudado * 0.04;
+        userSaldoAdeudado += interes_facaii;
         detalles.push({
           detalle: "Interes",
           importe: interes_facaii,
-          saldo: saldo_adeudado + interes_facaii //para que se usa este valor?
+          saldo: userSaldoAdeudado
         });
       }
+      userSaldoAdeudado += value;
       detalles.push({
         detalle: "Cuota Medicina",
         importe: value,
-        saldo: saldo_adeudado + value
+        saldo: userSaldoAdeudado
       });
-      if (saldo_adeudado <= 0) {
+      if (this.state.userSaldoAdeudado <= 0 && this.state.userMontoRegla > 0) {
+        userSaldoAdeudado -= this.state.userMontoRegla;
         detalles.push({
           detalle: "Regla de negocio",
-          importe: -this.state.monto_regla,
-          saldo: saldo_adeudado + value - this.state.monto_regla
+          importe: -this.state.userMontoRegla,
+          saldo: userSaldoAdeudado
         });
       }
     } else {
@@ -329,11 +293,10 @@ class CuentaCorriente extends React.Component {
         {
           detalle: "Reincorporación",
           importe: value,
-          saldo: saldo_adeudado + value
+          saldo: userSaldoAdeudado + value
         }
       ];
     }
-
     let value_total = detalles.reduce(
       (total, detalle) => total + detalle.importe,
       0
@@ -341,8 +304,8 @@ class CuentaCorriente extends React.Component {
     this.setState(
       {
         ...this.state,
-        factura_count: fcount,
-        reinc_count: rcount
+        globalFacturaCount: fcount,
+        globalReincCount: rcount
       },
       function() {
         this.emitirComprobante(
@@ -361,7 +324,7 @@ class CuentaCorriente extends React.Component {
   render() {
     let saldo_clase = "";
 
-    if (this.state.saldo_adeudado > 0)
+    if (this.state.userSaldoAdeudado > 0)
       saldo_clase = "saldo-adeudado saldo-adeudado-contra";
     else saldo_clase = "saldo-adeudado saldo-adeudado-favor";
 
@@ -394,7 +357,7 @@ class CuentaCorriente extends React.Component {
                           type="select"
                           name="select"
                           id="exampleSelect1"
-                          defaultValue={this.state.facturar_value}
+                          defaultValue={this.state.inputFacturarValor}
                           onChange={this.updateFacturarValue}
                         >
                           <option value="3900">Cuota Medicina</option>
@@ -459,34 +422,13 @@ class CuentaCorriente extends React.Component {
                     </Col>
                     <Col md={6}>
                       <Row>
-                        <Col md={2} className="saldo-label">
+                        <Col md={3} className="saldo-label">
                           Saldo:
                         </Col>
-
-                        <Col md={10} className={saldo_clase}>
-                          $ {this.state.saldo_adeudado}
+                        <Col md={9} className={saldo_clase}>
+                          $ {this.state.userSaldoAdeudado}
                         </Col>
                       </Row>
-                      {/* <Row>
-                        <Col m3={10}>Anticipo:</Col>
-                        <Col m3={1}>{this.state.anticipo}</Col>
-                      </Row>
-                      <Row>
-                        <Col m3={10}>Saldo:</Col>
-                        <Col m3={1}>{this.state.saldo_vencer}</Col>
-                      </Row>
-                      <Row>
-                        <Col m3={10}>Saldo Vencido:</Col>
-                        <Col m3={1}>{this.state.saldo_vencido}</Col>
-                      </Row>
-                      <Row>
-                        <Col m3={10}>Interés Individual:</Col>
-                        <Col m3={1}>{this.state.interes_individual}</Col>
-                      </Row>
-                      <Row>
-                        <Col m3={10}>Interés Total:</Col>
-                        <Col m3={1}>{this.state.interes_total}</Col>
-                      </Row> */}
                     </Col>
                   </Row>
                 </Form>
@@ -529,33 +471,18 @@ class CuentaCorriente extends React.Component {
                   <TabPane tabId="1">
                     <Row>
                       <Col md={{ size: 12 }} xs={12}>
-                        {/* <Label for="cobrarLabel">Cuenta Corriente</Label> */}
                         <CustomTable
                           header={cuenta_corriente_head}
-                          body={this.state.comprobantes_detalle}
-                          suma_debe={this.state.suma_debe}
-                          suma_haber={this.state.suma_haber}
+                          body={this.state.userComprobantesDetalle}
                           tipo={"cuenta_corriente"}
                         />
                       </Col>
-                      {/* <Col md={{ size: 7 }} xs={12}>
-                        <Label for="cobrarLabel">Comprobantes</Label>
-                        <CustomTable
-                          header={comprobante_head}
-                          body={this.state.cc}
-                          suma_debe={this.state.suma_debe}
-                          suma_haber={this.state.suma_haber}
-                          tipo={"comprobante"}
-                        />
-                      </Col> */}
                     </Row>
                   </TabPane>
                   <TabPane tabId="2">
                     <CustomTable
                       header={comprobante_head}
-                      body={this.state.cc}
-                      importe={this.state.suma_debe}
-                      suma_haber={this.state.suma_haber}
+                      body={this.state.userCC}
                       tipo={"comprobante"}
                     />
                   </TabPane>
