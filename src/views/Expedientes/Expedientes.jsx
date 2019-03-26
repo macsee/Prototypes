@@ -546,7 +546,7 @@ class Expedientes extends Component {
             this.state.data_exp,
             this.state.estado
           )}
-          callback={this.accion}
+          // callback={this.accion} //Creo que no se usa mas
           changeStateFromTable={this.changeStateFromTable}
         />
       </TabPane>

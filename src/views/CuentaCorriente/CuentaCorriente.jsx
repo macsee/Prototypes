@@ -180,7 +180,7 @@ class CuentaCorriente extends React.Component {
         fecha_emi: this.state.fhoy.toLocaleDateString(),
         comprobante: tipo,
         detalle: detalle,
-        importe: importe,
+        importe_total: importe,
         fecha_ven: fechaVencimiento.toLocaleDateString(),
         pagado: pagado,
         detalles: detalles,
@@ -188,16 +188,18 @@ class CuentaCorriente extends React.Component {
       }
     ]);
 
-    let p = this.pagarFacturasImpagas(t, importe);
-
-    this.actualizarEstado(p.t);
+    this.pagarFacturas(t, importe);
+    this.actualizarEstado(t);
+    // let p = this.pagarFacturas(t, importe);
+    // this.actualizarEstado(p.t);
   };
 
-  pagarFacturasImpagas = (t, saldo) => {
+  pagarFacturas = (t, importe_pagado) => {
+    console.log("Hola");
     let resto =
       this.state.userSaldoAdeudado < 0
-        ? saldo + this.state.userSaldoAdeudado
-        : saldo;
+        ? -importe_pagado + this.state.userSaldoAdeudado
+        : -importe_pagado;
 
     for (var i in t) {
       if (t[i].importe_adeudado > 0) {
@@ -211,6 +213,7 @@ class CuentaCorriente extends React.Component {
         }
       }
     }
+
     return { t: t, r: resto };
   };
 
@@ -228,7 +231,7 @@ class CuentaCorriente extends React.Component {
         this.emitirComprobante(
           "RI 000000" + count,
           "PAGO",
-          -value,
+          value,
           this.state.fhoy,
           true,
           [
@@ -263,7 +266,7 @@ class CuentaCorriente extends React.Component {
       detalle = "Cuota Medicina";
       detalles = [];
       if (this.state.userSaldoAdeudado > 0) {
-        let interesFacaii = userSaldoAdeudado * 0.04;
+        let interesFacaii = Math.round(userSaldoAdeudado * 0.04);
         userSaldoAdeudado += interesFacaii;
         detalles.push({
           detalle: "Interes",
@@ -475,6 +478,9 @@ class CuentaCorriente extends React.Component {
                           header={cuenta_corriente_head}
                           body={this.state.userComprobantesDetalle}
                           tipo={"cuenta_corriente"}
+                          changeStateFromTable={() => {
+                            return null;
+                          }}
                         />
                       </Col>
                     </Row>
@@ -484,6 +490,9 @@ class CuentaCorriente extends React.Component {
                       header={comprobante_head}
                       body={this.state.userCC}
                       tipo={"comprobante"}
+                      changeStateFromTable={() => {
+                        return null;
+                      }}
                     />
                   </TabPane>
                 </TabContent>
