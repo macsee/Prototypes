@@ -3,6 +3,8 @@
 import React from "react";
 import MyAutossugest from "../../components/MyAutossugest/MyAutosuggest.jsx";
 import classnames from "classnames";
+import mike from "assets/img/mike.jpg";
+import CardAuthor from "components/CardElements/CardAuthor.jsx";
 import {
   Form,
   Card,
@@ -29,26 +31,45 @@ class CuentaCorriente extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      monto_regla: 0,
-      suma_haber: 0,
-      suma_debe: 0,
-      cobrar_value: 0,
-      facturar_value: 3900,
-      cc: [],
-      comprobantes_detalle: [],
-      factura_count: 2,
-      ri_count: 1,
-      reinc_count: 0,
-      saldo_vencido: 0,
-      saldo_vencer: 0,
-      saldo_adeudado: 0,
-      anticipo: 0,
-      interes_total: 0,
-      interes_individual: 0,
+      globalFacturaCount: 2,
+      globalRiCount: 1,
+      globalReincCount: 0,
+      fhoy: new Date(),
       activeTab: "1",
-      fhoy: new Date()
+      inputCobrarValor: 0,
+      inputFacturarValor: 3900,
+      user: {},
+      userMontoRegla: 0,
+      userSaldoAdeudado: 0,
+      userCC: [],
+      userComprobantesDetalle: [],
+      userSaldoVencer: 0 // FIX: se puede borrar
     };
   }
+
+  componentDidMount = () => {
+    this.calcularTotales(this.state.userCC);
+  };
+
+  updateCobrarValue = evt => {
+    this.setState({ ...this.state, inputCobrarValor: evt.target.value });
+  };
+
+  updateFacturarValue = evt => {
+    this.setState({ ...this.state, inputFacturarValor: evt.target.value });
+  };
+
+  updateFecha = evt => {
+    this.setState(
+      {
+        ...this.state,
+        fhoy: new Date(evt.target.value + " 00:00:00")
+      },
+      function() {
+        this.calcularTotales(this.state.userCC);
+      }
+    );
+  };
 
   toggle = tab => {
     if (this.state.activeTab !== tab) {
@@ -60,28 +81,20 @@ class CuentaCorriente extends React.Component {
 
   getDetalles = tbody => {
     if (tbody.length === 0) return [];
-
     return [].concat.apply(
       [],
       tbody.map(prop => {
         return prop.detalles.map(detalle => {
           detalle.fecha_emi = prop.fecha_emi;
-          // new_d = Object.assign(
-          //   {},
-          //   fecha_emi: prop.fecha_emi,
-          //   new_d
-          // );
-          // return new_d;
           return detalle;
         });
       })
     );
   };
 
+  // TODO: Utilizar reduce en vez de map
   calcularSaldosParciales = tabla => {
     let acum = 0;
-    // if (tabla.length === 0) return;
-
     tabla.map(prop => {
       return prop.detalles.map(detalle => {
         acum = acum + detalle.importe;
@@ -89,24 +102,22 @@ class CuentaCorriente extends React.Component {
         return detalle;
       });
     });
-
     return acum;
   };
 
   setData = id => {
     let index = tbody.findIndex(x => x.id === id);
-    let saldo_adeudado = this.calcularSaldosParciales(tbody[index].data);
-
     this.setState(
       {
         ...this.state,
-        saldo_adeudado: saldo_adeudado,
-        monto_regla: tbody[index].regla, //Aparece aunuqe sea igual a 0
-        cc: tbody[index].data,
-        comprobantes_detalle: this.getDetalles(tbody[index].data)
+        userSaldoAdeudado: this.calcularSaldosParciales(tbody[index].data),
+        userMontoRegla: tbody[index].regla,
+        userCC: tbody[index].data,
+        user: tbody[index],
+        userComprobantesDetalle: this.getDetalles(tbody[index].data)
       },
       function() {
-        this.calcularTotales(this.state.cc, this.state.anticipo);
+        this.calcularTotales(this.state.userCC);
       }
     );
   };
@@ -115,48 +126,14 @@ class CuentaCorriente extends React.Component {
     return fhoy > fven;
   };
 
-  componentDidMount = () => {
-    // this.actualizar();
-    this.calcularTotales(this.state.cc, this.state.anticipo);
-  };
-
-  updateCobrarValue = evt => {
-    this.setState({ ...this.state, cobrar_value: evt.target.value });
-  };
-
-  updateFacturarValue = evt => {
-    this.setState({ ...this.state, facturar_value: evt.target.value });
-  };
-
-  updateFecha = evt => {
-    this.setState(
-      {
-        ...this.state,
-        fhoy: new Date(evt.target.value + " 00:00:00")
-      },
-      function() {
-        this.calcularTotales(this.state.cc, this.state.anticipo);
-      }
-    );
-  };
-
-  calcularTotales = (tempcc, resto) => {
-    let suma_d = 0;
-    let suma_h = 0;
+  calcularTotales = tempcc => {
     let fhoy = this.state.fhoy;
-    let anticipo = 0;
-    let saldo_vencer = 0;
-    let saldo_vencido = 0;
-    let interes_individual = 0;
+    let userSaldoVencer = 0;
 
     if (tempcc.length === 0) return;
 
     tempcc.map(prop => {
-      suma_d = suma_d + prop.debe;
-      suma_h = suma_h + prop.haber;
-
       let fven = prop.fecha_ven.split("/");
-
       fven = new Date(
         parseInt(fven[2]),
         parseInt(fven[1]) - 1,
@@ -165,111 +142,100 @@ class CuentaCorriente extends React.Component {
 
       prop.vencido = false;
       if (!prop.pagado && this.isVencida(fhoy, fven)) {
-        saldo_vencido += prop.debe;
         prop.vencido = true;
-        let msPerDay = 24 * 60 * 60 * 1000; // Number of milliseconds per day
-        let daysLeft = Math.round((fhoy.getTime() - fven.getTime()) / msPerDay);
-        interes_individual += Math.round(daysLeft * (prop.debe * 0.0013));
       } else if (!prop.pagado && !this.isVencida(fhoy, fven)) {
-        saldo_vencer += prop.debe;
+        userSaldoVencer += prop.debe;
       }
     });
-    anticipo += resto;
     this.setState({
       ...this.state,
-      cc: tempcc,
-      suma_debe: suma_d,
-      suma_haber: suma_h,
-      saldo_vencer: saldo_vencer,
-      saldo_vencido: saldo_vencido,
-      anticipo: anticipo,
-      comprobantes_detalle: this.getDetalles(tempcc),
-      interes_total: saldo_vencido * 0.04,
-      interes_individual: interes_individual
+      userCC: tempcc,
+      userSaldoVencer: userSaldoVencer,
+      userComprobantesDetalle: this.getDetalles(tempcc)
     });
   };
 
   actualizarEstado = tempcc => {
     this.setState({
       ...this.state,
-      cc: tempcc,
-      comprobantes_detalle: this.getDetalles(tempcc),
-      saldo_adeudado: tempcc.slice(-1)[0].detalles.slice(-1)[0].saldo
+      userCC: tempcc,
+      userComprobantesDetalle: this.getDetalles(tempcc),
+      userSaldoAdeudado: tempcc.slice(-1)[0].detalles.slice(-1)[0].saldo
     });
   };
 
-  emitirComprobante = (
-    tipo,
-    detalle,
-    debe,
-    haber,
-    fecha_ven,
-    pagado,
-    detalles
-  ) => {
-    if (this.state.cc.length === 0) return;
-    const tempcc = this.state.cc;
-
-    let t = tempcc.concat([
-      {
-        fecha_emi: this.state.fhoy.toLocaleDateString(),
-        comprobante: tipo,
-        detalle: detalle,
-        debe: debe,
-        haber: haber,
-        fecha_ven: fecha_ven.toLocaleDateString(),
-        pagado: pagado,
-        detalles: detalles
-      }
-    ]);
-
-    let p = this.pagarFacturasImpagas(t, haber + this.state.anticipo);
-
-    this.actualizarEstado(p.t);
-    // this.calcularSaldosParciales(p.t);
-
-    // this.calcularTotales(p.t, p.r);
-  };
-
-  pagarFacturasImpagas = (t, saldo) => {
-    let resto = saldo;
-
-    for (var l in t) {
-      if (!t[l].pagado) {
-        if (resto >= t[l].debe) {
-          t[l].pagado = true;
-          resto = resto - t[l].debe;
+  pagarFacturas = (t, importe_pagado) => {
+    let saldo = 0;
+    saldo +=
+      this.state.userSaldoAdeudado < 0 ? this.state.userSaldoAdeudado : 0;
+    saldo += importe_pagado < 0 ? importe_pagado : 0;
+    for (var i in t) {
+      if (t[i].importe_adeudado > 0) {
+        if (saldo < 0) {
+          let parteDePago =
+            -saldo > t[i].importe_adeudado ? -t[i].importe_adeudado : saldo;
+          t[i].importe_adeudado += parteDePago;
+          saldo += parteDePago;
         } else {
           break;
         }
       }
     }
-    return { t: t, r: resto };
+
+    return { t: t, r: saldo };
+  };
+
+  emitirComprobante = (
+    tipo,
+    detalle,
+    importe,
+    fechaVencimiento,
+    pagado,
+    detalles,
+    importeAdeudado = "-"
+  ) => {
+    const tempcc = this.state.userCC;
+    let t = tempcc.concat([
+      {
+        fecha_emi: this.state.fhoy.toLocaleDateString(),
+        comprobante: tipo,
+        detalle: detalle,
+        importe_total: importe,
+        fecha_ven: fechaVencimiento.toLocaleDateString(),
+        pagado: pagado,
+        detalles: detalles,
+        importe_adeudado: importeAdeudado
+      }
+    ]);
+
+    this.pagarFacturas(t, importe);
+    this.actualizarEstado(t);
+    // let p = this.pagarFacturas(t, importe);
+    // this.actualizarEstado(p.t);
   };
 
   cobrar = () => {
-    let value = parseInt(this.state.cobrar_value);
-    let count = this.state.ri_count + 1;
+    let value = parseInt(this.state.inputCobrarValor);
+    let count = this.state.globalRiCount + 1;
     if (value === 0 || isNaN(value)) return;
 
     this.setState(
       {
         ...this.state,
-        ri_count: count
+        globalRiCount: count
       },
       function() {
         this.emitirComprobante(
           "RI 000000" + count,
           "PAGO",
-          0,
-          value,
+          -value,
           this.state.fhoy,
           true,
           [
             {
               detalle: "PAGO con CHEQUE",
               importe: -value,
-              saldo: this.state.saldo_adeudado - value
+              saldo: this.state.userSaldoAdeudado - value
             }
           ]
         );
@@ -281,30 +247,44 @@ class CuentaCorriente extends React.Component {
     let comp;
     let detalle;
     let detalles;
-    let value = parseInt(this.state.facturar_value);
-    let fcount = this.state.factura_count;
-    let rcount = this.state.reinc_count;
+    let value = parseInt(this.state.inputFacturarValor);
+    let fcount = this.state.globalFacturaCount;
+    let rcount = this.state.globalReincCount;
 
-    let fecha_ven = new Date();
+    let fechaVencimiento = new Date();
 
-    fecha_ven.setTime(this.state.fhoy.getTime() + 15 * 24 * 60 * 60 * 1000);
-
+    fechaVencimiento.setTime(
+      this.state.fhoy.getTime() + 15 * 24 * 60 * 60 * 1000
+    );
+    let userSaldoAdeudado = this.state.userSaldoAdeudado;
     if (value === 3900) {
       fcount = fcount + 1;
       comp = "FACCAI 000000" + fcount;
       detalle = "Cuota Medicina";
-      detalles = [
-        {
-          detalle: "Cuota Medicina",
-          importe: value,
-          saldo: this.state.saldo_adeudado + value
-        },
-        {
+      detalles = [];
+      if (this.state.userSaldoAdeudado > 0) {
+        let interesFacaii = Math.round(userSaldoAdeudado * 0.04);
+        userSaldoAdeudado += interesFacaii;
+        detalles.push({
+          detalle: "Interes",
+          importe: interesFacaii,
+          saldo: userSaldoAdeudado
+        });
+      }
+      userSaldoAdeudado += value;
+      detalles.push({
+        detalle: "Cuota Medicina",
+        importe: value,
+        saldo: userSaldoAdeudado
+      });
+      if (this.state.userSaldoAdeudado <= 0 && this.state.userMontoRegla > 0) {
+        userSaldoAdeudado -= this.state.userMontoRegla;
+        detalles.push({
           detalle: "Regla de negocio",
-          importe: -this.state.monto_regla,
-          saldo: this.state.saldo_adeudado + value - this.state.monto_regla
-        }
-      ];
+          importe: -this.state.userMontoRegla,
+          saldo: userSaldoAdeudado
+        });
+      }
     } else {
       fcount = fcount + 1;
       comp = "FACCAI 000000" + fcount;
@@ -313,37 +293,40 @@ class CuentaCorriente extends React.Component {
         {
           detalle: "Reincorporación",
           importe: value,
-          saldo: this.state.saldo_adeudado + value
+          saldo: userSaldoAdeudado + value
         }
       ];
     }
-
+    let valueTotal = detalles.reduce(
+      (total, detalle) => total + detalle.importe,
+      0
+    );
     this.setState(
       {
         ...this.state,
-        factura_count: fcount,
-        reinc_count: rcount
+        globalFacturaCount: fcount,
+        globalReincCount: rcount
       },
       function() {
         this.emitirComprobante(
           comp,
           detalle,
-          value,
-          0,
-          fecha_ven,
+          valueTotal,
+          fechaVencimiento,
           false,
-          detalles
+          detalles,
+          valueTotal
         );
       }
     );
   };
 
   render() {
-    let saldo_clase = "";
+    let saldoClase = "";
 
-    if (this.state.saldo_adeudado > 0)
-      saldo_clase = "saldo-adeudado saldo-adeudado-contra";
-    else saldo_clase = "saldo-adeudado saldo-adeudado-favor";
+    if (this.state.userSaldoAdeudado > 0)
+      saldoClase = "saldo-adeudado saldo-adeudado-contra";
+    else saldoClase = "saldo-adeudado saldo-adeudado-favor";
 
     return (
       <div className="content">
@@ -353,7 +336,18 @@ class CuentaCorriente extends React.Component {
               <CardBody>
                 <Form>
                   <Row form>
-                    <Col md={2}>
+                    <Col md={3}>
+                      <FormGroup>
+                        <Label for="exampleSelect1">Buscar Apellido</Label>
+                        <MyAutossugest
+                          data={tbody}
+                          callback={x => this.setData(x)}
+                        />
+                      </FormGroup>
+                    </Col>
+                  </Row>
+                  <Row form>
+                    <Col md={3}>
                       <FormGroup>
                         <Label for="exampleSelect1">Fecha Actual</Label>
                         <Input
@@ -374,7 +368,7 @@ class CuentaCorriente extends React.Component {
                           type="select"
                           name="select"
                           id="exampleSelect1"
-                          defaultValue={this.state.facturar_value}
+                          defaultValue={this.state.inputFacturarValor}
                           onChange={this.updateFacturarValue}
                         >
                           <option value="3900">Cuota Medicina</option>
@@ -422,54 +416,50 @@ class CuentaCorriente extends React.Component {
         <Row>
           <Col md={{ size: 12 }} xs={12}>
             <Card>
-              <CardHeader>
-                <CardTitle tag="h4">Alumno</CardTitle>
-              </CardHeader>
               <CardBody>
-                <Form>
-                  <Row form>
-                    <Col md={6}>
-                      <FormGroup>
-                        <MyAutossugest
-                          data={tbody}
-                          placeholder={"Buscar Apellido"}
-                          callback={x => this.setData(x)}
+                {/* <CardAuthor avatar={mike} avatarAlt="..." title="Chet Faker" /> */}
+                <Row>
+                  <Col md={{ size: 2 }} xs={12}>
+                    <div className="author">
+                      {this.state.user.id !== undefined ? (
+                        <img
+                          className="avatar border-gray"
+                          src={this.state.user.avatar}
                         />
-                      </FormGroup>
-                    </Col>
-                    <Col md={6}>
-                      <Row>
-                        <Col md={2} className="saldo-label">
-                          Saldo:
-                        </Col>
-
-                        <Col md={10} className={saldo_clase}>
-                          $ {this.state.saldo_adeudado}
-                        </Col>
-                      </Row>
-                      {/* <Row>
-                        <Col m3={10}>Anticipo:</Col>
-                        <Col m3={1}>{this.state.anticipo}</Col>
-                      </Row>
-                      <Row>
-                        <Col m3={10}>Saldo:</Col>
-                        <Col m3={1}>{this.state.saldo_vencer}</Col>
-                      </Row>
-                      <Row>
-                        <Col m3={10}>Saldo Vencido:</Col>
-                        <Col m3={1}>{this.state.saldo_vencido}</Col>
-                      </Row>
-                      <Row>
-                        <Col m3={10}>Interés Individual:</Col>
-                        <Col m3={1}>{this.state.interes_individual}</Col>
-                      </Row>
-                      <Row>
-                        <Col m3={10}>Interés Total:</Col>
-                        <Col m3={1}>{this.state.interes_total}</Col>
-                      </Row> */}
-                    </Col>
-                  </Row>
-                </Form>
+                      ) : (
+                        ""
+                      )}
+                    </div>
+                  </Col>
+                  <Col md={{ size: 7 }} xs={12}>
+                    <h4 style={{ marginTop: "0px" }}>
+                      {this.state.user.id !== undefined
+                        ? this.state.user.apellido +
+                          ", " +
+                          this.state.user.nombre
+                        : ""}
+                    </h4>
+                    <Row>
+                      <Col md={{ size: 3 }}>
+                        {this.state.user.id !== undefined
+                          ? "DNI: " + this.state.user.dni
+                          : ""}
+                      </Col>
+                    </Row>
+                    <Row>
+                      <Col md={{ size: 3 }}>
+                        {this.state.user.id !== undefined
+                          ? "Carrera: " + this.state.user.carrera
+                          : ""}
+                      </Col>
+                      <Col md={{ size: 3 }}>
+                        {this.state.user.id !== undefined
+                          ? "Año: " + this.state.user.anio_curso
+                          : ""}
+                      </Col>
+                    </Row>
+                  </Col>
+                </Row>
               </CardBody>
             </Card>
           </Col>
@@ -488,7 +478,7 @@ class CuentaCorriente extends React.Component {
                         this.toggle("1");
                       }}
                     >
-                      Cuenta Corriente
+                      Contabilidad
                     </NavLink>
                   </NavItem>
                   <NavItem>
@@ -500,44 +490,112 @@ class CuentaCorriente extends React.Component {
                         this.toggle("2");
                       }}
                     >
-                      Comprobantes
+                      Datos Personales
                     </NavLink>
                   </NavItem>
                 </Nav>
 
                 <TabContent activeTab={this.state.activeTab}>
                   <TabPane tabId="1">
+                    {/* <Col md={{ offset: 8 }}> */}
+                    <Row className="contable">
+                      <Col
+                        md={{ size: 2, offset: 8 }}
+                        xs={{ size: 5, offset: 0 }}
+                        className="saldo-label"
+                      >
+                        Saldo:
+                      </Col>
+                      <Col md={2} xs={7} className={saldoClase}>
+                        $ {this.state.userSaldoAdeudado}
+                      </Col>
+                    </Row>
+                    {/* </Col> */}
                     <Row>
-                      <Col md={{ size: 12 }} xs={12}>
-                        {/* <Label for="cobrarLabel">Cuenta Corriente</Label> */}
+                      <Col md={{ size: 5 }} xs={12}>
+                        <Label for="cobrarLabel">Cuenta Corriente</Label>
                         <CustomTable
                           header={cuenta_corriente_head}
-                          body={this.state.comprobantes_detalle}
-                          suma_debe={this.state.suma_debe}
-                          suma_haber={this.state.suma_haber}
+                          body={this.state.userComprobantesDetalle}
                           tipo={"cuenta_corriente"}
+                          changeStateFromTable={() => {
+                            return null;
+                          }}
                         />
                       </Col>
-                      {/* <Col md={{ size: 7 }} xs={12}>
+                      <Col md={{ size: 7 }} xs={12}>
                         <Label for="cobrarLabel">Comprobantes</Label>
                         <CustomTable
                           header={comprobante_head}
-                          body={this.state.cc}
-                          suma_debe={this.state.suma_debe}
-                          suma_haber={this.state.suma_haber}
+                          body={this.state.userCC}
                           tipo={"comprobante"}
+                          changeStateFromTable={() => {
+                            return null;
+                          }}
                         />
-                      </Col> */}
+                      </Col>
                     </Row>
                   </TabPane>
                   <TabPane tabId="2">
-                    <CustomTable
-                      header={comprobante_head}
-                      body={this.state.cc}
-                      suma_debe={this.state.suma_debe}
-                      suma_haber={this.state.suma_haber}
-                      tipo={"comprobante"}
-                    />
+                    <Row>
+                      <Col md={{ size: 12 }} xs={12}>
+                        <Card>
+                          <CardBody>
+                            <Row>
+                              <Col md={{ size: 3 }}>
+                                {this.state.user.id !== undefined
+                                  ? "Fecha de Nacimiento: " +
+                                    this.state.user.fecha_nacimiento
+                                  : ""}
+                              </Col>
+                            </Row>
+                            <Row>
+                              <Col md={{ size: 3 }}>
+                                {this.state.user.id !== undefined
+                                  ? "Dirección: " + this.state.user.direccion
+                                  : ""}
+                              </Col>
+                              <Col md={{ size: 3 }}>
+                                {this.state.user.id !== undefined
+                                  ? "Ciudad: " + this.state.user.ciudad
+                                  : ""}
+                              </Col>
+                            </Row>
+                            <Row>
+                              <Col md={{ size: 3 }}>
+                                {this.state.user.id !== undefined
+                                  ? "Teléfono: " + this.state.user.celular
+                                  : ""}
+                              </Col>
+                            </Row>
+                            <Row>
+                              <Col md={{ size: 3 }}>
+                                {this.state.user.id !== undefined
+                                  ? "E-Mail: " + this.state.user.email
+                                  : ""}
+                              </Col>
+                            </Row>
+                            <Row>
+                              <Col md={{ size: 3 }}>
+                                {this.state.user.id !== undefined
+                                  ? "Fecha de Inscripción: " +
+                                    this.state.user.fecha_inscripcion
+                                  : ""}
+                              </Col>
+                            </Row>
+                            <Row>
+                              <Col md={{ size: 3 }}>
+                                <span className="badge badge-success">
+                                  {this.state.user.id !== undefined
+                                    ? this.state.user.estado
+                                    : ""}
+                                </span>
+                              </Col>
+                            </Row>
+                          </CardBody>
+                        </Card>
+                      </Col>
+                    </Row>
                   </TabPane>
                 </TabContent>
               </CardBody>

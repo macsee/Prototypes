@@ -78,7 +78,7 @@ class Expedientes extends Component {
         );
     };
     getData();
-    // this._interval = window.setInterval(getData, 1000);
+    this._interval = window.setInterval(getData, 1000);
   }
 
   makeRequest = (method, elemente, fc) => {
@@ -267,16 +267,18 @@ class Expedientes extends Component {
   };
 
   updateFechaDesde = evt => {
+    // alert(evt.target.value);
     this.setState({
       ...this.state,
-      fechaDesde: new Date(evt.target.value + " 00:00:00")
+      fechaDesde: new Date(evt.target.value)
     });
   };
 
   updateFechaHasta = evt => {
+    // alert(evt.target.value);
     this.setState({
       ...this.state,
-      fechaHasta: new Date(evt.target.value + " 00:00:00")
+      fechaHasta: new Date(evt.target.value)
     });
   };
 
@@ -429,6 +431,9 @@ class Expedientes extends Component {
           parseInt(finicio[1]) - 1,
           parseInt(finicio[0])
         );
+        // alert(fechaDesde);
+        // alert(fechaHasta);
+        console.log(finicio, fechaDesde, fechaHasta);
         return finicio >= fechaDesde && finicio <= fechaHasta;
       });
     }
@@ -541,7 +546,7 @@ class Expedientes extends Component {
             this.state.data_exp,
             this.state.estado
           )}
-          callback={this.accion}
+          // callback={this.accion} //Creo que no se usa mas
           changeStateFromTable={this.changeStateFromTable}
         />
       </TabPane>
