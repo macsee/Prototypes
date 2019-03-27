@@ -3,6 +3,8 @@
 import React from "react";
 import MyAutossugest from "../../components/MyAutossugest/MyAutosuggest.jsx";
 import classnames from "classnames";
+import mike from "assets/img/mike.jpg";
+import CardAuthor from "components/CardElements/CardAuthor.jsx";
 import {
   Form,
   Card,
@@ -24,11 +26,6 @@ import {
 import { cuenta_corriente_head, comprobante_head, tbody } from "variables/cc";
 import Button from "components/CustomButton/CustomButton.jsx";
 import CustomTable from "components/CustomTable/CustomTable.jsx";
-import { maxHeaderSize } from "http";
-
-// TODO: no se ponen en verde los pagados
-// TODO: si hay saldo a favor no se cancela la factura emitida
-// TODO: el interes se calcula siempre que se factura y no si los saldos estan vencidos
 
 class CuentaCorriente extends React.Component {
   constructor(props) {
@@ -41,6 +38,7 @@ class CuentaCorriente extends React.Component {
       activeTab: "1",
       inputCobrarValor: 0,
       inputFacturarValor: 3900,
+      user: {},
       userMontoRegla: 0,
       userSaldoAdeudado: 0,
       userCC: [],
@@ -115,6 +113,7 @@ class CuentaCorriente extends React.Component {
         userSaldoAdeudado: this.calcularSaldosParciales(tbody[index].data),
         userMontoRegla: tbody[index].regla,
         userCC: tbody[index].data,
+        user: tbody[index],
         userComprobantesDetalle: this.getDetalles(tbody[index].data)
       },
       function() {
@@ -165,6 +164,27 @@ class CuentaCorriente extends React.Component {
     });
   };
 
+  pagarFacturas = (t, importe_pagado) => {
+    let saldo = 0;
+    saldo +=
+      this.state.userSaldoAdeudado < 0 ? this.state.userSaldoAdeudado : 0;
+    saldo += importe_pagado < 0 ? importe_pagado : 0;
+    for (var i in t) {
+      if (t[i].importe_adeudado > 0) {
+        if (saldo < 0) {
+          let parteDePago =
+            -saldo > t[i].importe_adeudado ? -t[i].importe_adeudado : saldo;
+          t[i].importe_adeudado += parteDePago;
+          saldo += parteDePago;
+        } else {
+          break;
+        }
+      }
+    }
+
+    return { t: t, r: saldo };
+  };
+
   emitirComprobante = (
     tipo,
     detalle,
@@ -172,7 +192,7 @@ class CuentaCorriente extends React.Component {
     fechaVencimiento,
     pagado,
     detalles,
-    importeAdeudado = undefined
+    importeAdeudado = "-"
   ) => {
     const tempcc = this.state.userCC;
     let t = tempcc.concat([
@@ -194,29 +214,6 @@ class CuentaCorriente extends React.Component {
     // this.actualizarEstado(p.t);
   };
 
-  pagarFacturas = (t, importe_pagado) => {
-    console.log("Hola");
-    let resto =
-      this.state.userSaldoAdeudado < 0
-        ? -importe_pagado + this.state.userSaldoAdeudado
-        : -importe_pagado;
-
-    for (var i in t) {
-      if (t[i].importe_adeudado > 0) {
-        if (resto < 0) {
-          let parteDePago =
-            -resto > t[i].importe_adeudado ? -t[i].importe_adeudado : resto;
-          t[i].importe_adeudado += parteDePago;
-          resto += parteDePago;
-        } else {
-          break;
-        }
-      }
-    }
-
-    return { t: t, r: resto };
-  };
-
   cobrar = () => {
     let value = parseInt(this.state.inputCobrarValor);
     let count = this.state.globalRiCount + 1;
@@ -231,7 +228,7 @@ class CuentaCorriente extends React.Component {
         this.emitirComprobante(
           "RI 000000" + count,
           "PAGO",
-          value,
+          -value,
           this.state.fhoy,
           true,
           [
@@ -339,7 +336,18 @@ class CuentaCorriente extends React.Component {
               <CardBody>
                 <Form>
                   <Row form>
-                    <Col md={2}>
+                    <Col md={3}>
+                      <FormGroup>
+                        <Label for="exampleSelect1">Buscar Apellido</Label>
+                        <MyAutossugest
+                          data={tbody}
+                          callback={x => this.setData(x)}
+                        />
+                      </FormGroup>
+                    </Col>
+                  </Row>
+                  <Row form>
+                    <Col md={3}>
                       <FormGroup>
                         <Label for="exampleSelect1">Fecha Actual</Label>
                         <Input
@@ -408,33 +416,50 @@ class CuentaCorriente extends React.Component {
         <Row>
           <Col md={{ size: 12 }} xs={12}>
             <Card>
-              <CardHeader>
-                <CardTitle tag="h4">Alumno</CardTitle>
-              </CardHeader>
               <CardBody>
-                <Form>
-                  <Row form>
-                    <Col md={6}>
-                      <FormGroup>
-                        <MyAutossugest
-                          data={tbody}
-                          placeholder={"Buscar Apellido"}
-                          callback={x => this.setData(x)}
+                {/* <CardAuthor avatar={mike} avatarAlt="..." title="Chet Faker" /> */}
+                <Row>
+                  <Col md={{ size: 2 }} xs={12}>
+                    <div className="author">
+                      {this.state.user.id !== undefined ? (
+                        <img
+                          className="avatar border-gray"
+                          src={this.state.user.avatar}
                         />
-                      </FormGroup>
-                    </Col>
-                    <Col md={6}>
-                      <Row>
-                        <Col md={3} className="saldo-label">
-                          Saldo:
-                        </Col>
-                        <Col md={9} className={saldoClase}>
-                          $ {this.state.userSaldoAdeudado}
-                        </Col>
-                      </Row>
-                    </Col>
-                  </Row>
-                </Form>
+                      ) : (
+                        ""
+                      )}
+                    </div>
+                  </Col>
+                  <Col md={{ size: 7 }} xs={12}>
+                    <h4 style={{ marginTop: "0px" }}>
+                      {this.state.user.id !== undefined
+                        ? this.state.user.apellido +
+                          ", " +
+                          this.state.user.nombre
+                        : ""}
+                    </h4>
+                    <Row>
+                      <Col md={{ size: 3 }}>
+                        {this.state.user.id !== undefined
+                          ? "DNI: " + this.state.user.dni
+                          : ""}
+                      </Col>
+                    </Row>
+                    <Row>
+                      <Col md={{ size: 3 }}>
+                        {this.state.user.id !== undefined
+                          ? "Carrera: " + this.state.user.carrera
+                          : ""}
+                      </Col>
+                      <Col md={{ size: 3 }}>
+                        {this.state.user.id !== undefined
+                          ? "Año: " + this.state.user.anio_curso
+                          : ""}
+                      </Col>
+                    </Row>
+                  </Col>
+                </Row>
               </CardBody>
             </Card>
           </Col>
@@ -453,7 +478,7 @@ class CuentaCorriente extends React.Component {
                         this.toggle("1");
                       }}
                     >
-                      Cuenta Corriente
+                      Contabilidad
                     </NavLink>
                   </NavItem>
                   <NavItem>
@@ -465,15 +490,30 @@ class CuentaCorriente extends React.Component {
                         this.toggle("2");
                       }}
                     >
-                      Comprobantes
+                      Datos Personales
                     </NavLink>
                   </NavItem>
                 </Nav>
 
                 <TabContent activeTab={this.state.activeTab}>
                   <TabPane tabId="1">
+                    {/* <Col md={{ offset: 8 }}> */}
+                    <Row className="contable">
+                      <Col
+                        md={{ size: 2, offset: 8 }}
+                        xs={{ size: 5, offset: 0 }}
+                        className="saldo-label"
+                      >
+                        Saldo:
+                      </Col>
+                      <Col md={2} xs={7} className={saldoClase}>
+                        $ {this.state.userSaldoAdeudado}
+                      </Col>
+                    </Row>
+                    {/* </Col> */}
                     <Row>
-                      <Col md={{ size: 12 }} xs={12}>
+                      <Col md={{ size: 5 }} xs={12}>
+                        <Label for="cobrarLabel">Cuenta Corriente</Label>
                         <CustomTable
                           header={cuenta_corriente_head}
                           body={this.state.userComprobantesDetalle}
@@ -483,17 +523,79 @@ class CuentaCorriente extends React.Component {
                           }}
                         />
                       </Col>
+                      <Col md={{ size: 7 }} xs={12}>
+                        <Label for="cobrarLabel">Comprobantes</Label>
+                        <CustomTable
+                          header={comprobante_head}
+                          body={this.state.userCC}
+                          tipo={"comprobante"}
+                          changeStateFromTable={() => {
+                            return null;
+                          }}
+                        />
+                      </Col>
                     </Row>
                   </TabPane>
                   <TabPane tabId="2">
-                    <CustomTable
-                      header={comprobante_head}
-                      body={this.state.userCC}
-                      tipo={"comprobante"}
-                      changeStateFromTable={() => {
-                        return null;
-                      }}
-                    />
+                    <Row>
+                      <Col md={{ size: 12 }} xs={12}>
+                        <Card>
+                          <CardBody>
+                            <Row>
+                              <Col md={{ size: 3 }}>
+                                {this.state.user.id !== undefined
+                                  ? "Fecha de Nacimiento: " +
+                                    this.state.user.fecha_nacimiento
+                                  : ""}
+                              </Col>
+                            </Row>
+                            <Row>
+                              <Col md={{ size: 3 }}>
+                                {this.state.user.id !== undefined
+                                  ? "Dirección: " + this.state.user.direccion
+                                  : ""}
+                              </Col>
+                              <Col md={{ size: 3 }}>
+                                {this.state.user.id !== undefined
+                                  ? "Ciudad: " + this.state.user.ciudad
+                                  : ""}
+                              </Col>
+                            </Row>
+                            <Row>
+                              <Col md={{ size: 3 }}>
+                                {this.state.user.id !== undefined
+                                  ? "Teléfono: " + this.state.user.celular
+                                  : ""}
+                              </Col>
+                            </Row>
+                            <Row>
+                              <Col md={{ size: 3 }}>
+                                {this.state.user.id !== undefined
+                                  ? "E-Mail: " + this.state.user.email
+                                  : ""}
+                              </Col>
+                            </Row>
+                            <Row>
+                              <Col md={{ size: 3 }}>
+                                {this.state.user.id !== undefined
+                                  ? "Fecha de Inscripción: " +
+                                    this.state.user.fecha_inscripcion
+                                  : ""}
+                              </Col>
+                            </Row>
+                            <Row>
+                              <Col md={{ size: 3 }}>
+                                <span className="badge badge-success">
+                                  {this.state.user.id !== undefined
+                                    ? this.state.user.estado
+                                    : ""}
+                                </span>
+                              </Col>
+                            </Row>
+                          </CardBody>
+                        </Card>
+                      </Col>
+                    </Row>
                   </TabPane>
                 </TabContent>
               </CardBody>
